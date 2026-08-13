@@ -1,1 +1,1 @@
-﻿Git protection test
+Git protection test
