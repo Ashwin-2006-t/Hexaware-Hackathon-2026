@@ -1,0 +1,41 @@
+import os
+from typing import List
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    PROJECT_NAME: str = "SilverHands API"
+    VERSION: str = "0.2.0"
+    API_V1_STR: str = "/api/v1"
+    ENVIRONMENT: str = "development"
+    SECRET_KEY: str = "silverhands-hackathon-secret-key-2026-senior-livelihoods"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
+
+    # CORS Configuration
+    BACKEND_CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+    ]
+
+    # Database Settings (SQLite fallback ready)
+    DATABASE_URL: str = "sqlite:///./silverhands.db"
+    SUPABASE_URL: str = ""
+    SUPABASE_ANON_KEY: str = ""
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
+
+    # Gemini AI Settings
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-1.5-flash"  # Default low-cost model for backend agent operations
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore"
+    )
+
+
+settings = Settings()
