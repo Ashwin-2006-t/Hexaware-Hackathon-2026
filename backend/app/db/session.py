@@ -16,7 +16,7 @@ def get_engine():
     if _engine is None:
         db_url = settings.DATABASE_URL
         try:
-            # Use SQLite in-memory or file fallback if PostgreSQL is not running locally
+            # Use SQLite file if configured or if PostgreSQL is not available
             if "sqlite" in db_url or "localhost" in db_url:
                 try:
                     _engine = create_engine(db_url, pool_pre_ping=True)
@@ -33,10 +33,12 @@ def get_engine():
             _engine = create_engine("sqlite:///./silverhands.db", connect_args={"check_same_thread": False})
     return _engine
 
-def init_db():
+def init_db(force_recreate: bool = False):
     """Initializes database tables."""
     engine = get_engine()
     from app.models import domain  # Ensure models are imported
+    if force_recreate:
+        Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 
 def get_session_factory():
