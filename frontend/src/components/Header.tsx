@@ -1,7 +1,8 @@
 import React from 'react'
 import {
   HeartHandshake, ShieldCheck, Store, Search, Wand2,
-  Bot, LayoutDashboard, Type, Eye, LogIn, LogOut, Globe
+  Bot, LayoutDashboard, Type, Eye, LogIn, LogOut, Globe,
+  TrendingUp
 } from 'lucide-react'
 import type { User } from '../types'
 import { api } from '../services/api'
@@ -38,6 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   const tabs = [
     { id: 'marketplace', label: t.navMarketplace, icon: Store },
+    { id: 'opportunities', label: t.navOpportunities, icon: TrendingUp },
     { id: 'smart-match', label: t.navSmartMatch, icon: Search },
     { id: 'skill-builder', label: t.navSkillBuilder, icon: Wand2 },
     { id: 'mentor-bot', label: t.navMentorBot, icon: Bot },
@@ -64,14 +66,14 @@ export const Header: React.FC<HeaderProps> = ({
     <header className={`sticky top-0 z-50 transition-colors duration-200 ${
       highContrast 
         ? 'bg-black text-amber-300 border-b-4 border-amber-400' 
-        : 'bg-[#0F2744] text-white border-b border-slate-800 shadow-md'
+        : 'bg-[#0A0F24] text-white border-b border-slate-800 shadow-md'
     }`}>
       {/* Top Accessibility & System Status Bar */}
       <div className={`px-4 md:px-8 py-1.5 flex flex-wrap items-center justify-between text-xs font-medium ${
-        highContrast ? 'bg-amber-400 text-black font-bold' : 'bg-[#0A192F] text-slate-300 border-b border-slate-800'
+        highContrast ? 'bg-amber-400 text-black font-bold' : 'bg-[#060A19] text-slate-300 border-b border-slate-900'
       }`}>
         <div className="flex items-center gap-2">
-          <ShieldCheck className={`w-4 h-4 ${highContrast ? 'text-black' : 'text-sky-400'}`} />
+          <ShieldCheck className={`w-4 h-4 ${highContrast ? 'text-black' : 'text-[#4099FF]'}`} />
           <span>{t.platformNotice}</span>
         </div>
 
@@ -79,13 +81,13 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-3">
           {/* Language Switcher (EN / TA / HI) */}
           <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md border ${
-            highContrast ? 'border-black bg-white/20' : 'bg-slate-900/80 border-slate-700'
+            highContrast ? 'border-black bg-white/20' : 'bg-slate-900/90 border-slate-700'
           }`}>
-            <Globe className="w-3.5 h-3.5 text-sky-400" />
+            <Globe className="w-3.5 h-3.5 text-[#4099FF]" />
             <button
               onClick={() => setLanguage('en')}
               className={`px-1.5 py-0.5 rounded font-semibold cursor-pointer text-xs transition-all ${
-                language === 'en' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white'
+                language === 'en' ? 'bg-[#4B32E6] text-white' : 'text-slate-300 hover:text-white'
               }`}
             >
               EN
@@ -93,7 +95,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => setLanguage('ta')}
               className={`px-1.5 py-0.5 rounded font-semibold cursor-pointer text-xs transition-all ${
-                language === 'ta' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white'
+                language === 'ta' ? 'bg-[#4B32E6] text-white' : 'text-slate-300 hover:text-white'
               }`}
             >
               தமிழ்
@@ -101,7 +103,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => setLanguage('hi')}
               className={`px-1.5 py-0.5 rounded font-semibold cursor-pointer text-xs transition-all ${
-                language === 'hi' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white'
+                language === 'hi' ? 'bg-[#4B32E6] text-white' : 'text-slate-300 hover:text-white'
               }`}
             >
               हिन्दी
@@ -110,9 +112,9 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Font Size Scaling */}
           <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md border ${
-            highContrast ? 'border-black bg-white/20' : 'bg-slate-900/80 border-slate-700'
+            highContrast ? 'border-black bg-white/20' : 'bg-slate-900/90 border-slate-700'
           }`}>
-            <Type className="w-3.5 h-3.5 text-sky-400 mr-0.5" />
+            <Type className="w-3.5 h-3.5 text-[#4099FF] mr-0.5" />
             <span className="text-slate-300 text-xs mr-0.5">{t.textScale}</span>
             <button
               onClick={() => handleFontSizeChange('normal')}
@@ -149,7 +151,7 @@ export const Header: React.FC<HeaderProps> = ({
             className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-md font-semibold text-xs transition-all cursor-pointer ${
               highContrast 
                 ? 'bg-black text-amber-300 border border-amber-300' 
-                : 'bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700'
+                : 'bg-slate-850 text-slate-200 border border-slate-700 hover:bg-slate-800'
             }`}
           >
             <Eye className="w-3.5 h-3.5" />
@@ -159,21 +161,21 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Main Header Container */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-3.5 flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Brand Logo & Tagline */}
-        <div className="flex items-center gap-3.5 cursor-pointer" onClick={() => setActiveTab('marketplace')}>
-          <div className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-md transition-transform hover:scale-105 ${
-            highContrast ? 'bg-amber-400 text-black border-2 border-white' : 'bg-blue-600 text-white'
+        <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('marketplace')}>
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-md transition-transform hover:scale-105 ${
+            highContrast ? 'bg-amber-400 text-black border-2 border-white' : 'bg-gradient-to-tr from-[#4B32E6] to-[#4099FF] text-white'
           }`}>
-            <HeartHandshake className="w-6 h-6" />
+            <HeartHandshake className="w-6 h-6 font-black" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-black tracking-tight text-white">SilverHands</h1>
               <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
-                highContrast ? 'bg-amber-300 text-black' : 'bg-blue-900 text-sky-300 border border-blue-700'
+                highContrast ? 'bg-amber-300 text-black' : 'bg-blue-950 text-[#4099FF] border border-[#4099FF]/40'
               }`}>
-                v3.1 • India
+                v3.2 • Enterprise
               </span>
             </div>
             <p className={`text-xs ${highContrast ? 'text-amber-200' : 'text-slate-300'}`}>
@@ -191,25 +193,25 @@ export const Header: React.FC<HeaderProps> = ({
                 className={`btn-large ${
                   highContrast 
                     ? 'bg-amber-400 text-black border-2 border-white' 
-                    : 'bg-slate-800 text-white hover:bg-slate-700 border border-slate-700'
+                    : 'bg-slate-900 text-white hover:bg-slate-800 border border-slate-700'
                 }`}
               >
                 <img
                   src={currentUser.avatar_url || defaultAvatar}
                   alt={currentUser.full_name}
-                  className="w-7 h-7 rounded-full object-cover border border-sky-400"
+                  className="w-6 h-6 rounded-full object-cover border border-[#4099FF]"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = defaultAvatar
                   }}
                 />
-                <span className="font-bold">{currentUser.full_name}</span>
-                <span className="text-xs bg-blue-900/60 text-sky-200 px-2 py-0.5 rounded border border-blue-700 capitalize">
+                <span className="font-bold text-xs md:text-sm">{currentUser.full_name}</span>
+                <span className="text-[10px] bg-blue-950 text-[#4099FF] px-2 py-0.5 rounded border border-[#4099FF]/30 capitalize">
                   {currentUser.user_type || currentUser.role}
                 </span>
               </button>
               <button
                 onClick={handleLogout}
-                className="p-2.5 bg-rose-900/30 text-rose-300 border border-rose-800 rounded-lg hover:bg-rose-900/50 transition-all cursor-pointer"
+                className="p-2.5 bg-rose-950/40 text-rose-300 border border-rose-800 rounded-lg hover:bg-rose-900/60 transition-all cursor-pointer"
                 title={t.signOut}
               >
                 <LogOut className="w-4 h-4" />
@@ -218,10 +220,8 @@ export const Header: React.FC<HeaderProps> = ({
           ) : (
             <button
               onClick={onOpenAuth}
-              className={`btn-large ${
-                highContrast 
-                  ? 'bg-amber-400 text-black font-bold' 
-                  : 'bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm'
+              className={`btn-large btn-indigo text-xs md:text-sm ${
+                highContrast ? 'bg-amber-400 text-black font-bold' : ''
               }`}
             >
               <LogIn className="w-4 h-4" />
@@ -232,7 +232,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Navigation Tab Bar */}
-      <nav className={`border-t ${highContrast ? 'border-amber-400 bg-zinc-950' : 'border-slate-800 bg-[#0A192F]'}`}>
+      <nav className={`border-t ${highContrast ? 'border-amber-400 bg-zinc-950' : 'border-slate-800/80 bg-[#060A19]'}`}>
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-center md:justify-start overflow-x-auto gap-1.5 py-1.5">
           {tabs.map((tab) => {
             const Icon = tab.icon
@@ -241,17 +241,17 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-3.5 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                className={`px-3.5 py-2 rounded-lg font-medium text-xs transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                   isActive
                     ? highContrast
                       ? 'bg-amber-400 text-black font-bold border-2 border-white'
-                      : 'bg-blue-600 text-white shadow-sm font-semibold'
+                      : 'bg-[#4B32E6] text-white shadow-sm font-semibold'
                     : highContrast
                       ? 'text-amber-200 hover:bg-zinc-800'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                      : 'text-slate-300 hover:bg-slate-850 hover:text-white'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-[#4099FF]'}`} />
                 <span>{tab.label}</span>
               </button>
             )

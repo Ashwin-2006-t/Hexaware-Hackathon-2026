@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import {
   Calendar, ShieldCheck, Star, Upload, CheckCircle2,
   TrendingUp, Sparkles, Lightbulb,
-  Edit3, Trash2, Plus, Briefcase
+  Edit3, Trash2, Plus, Briefcase, Check
 } from 'lucide-react'
 import type { Booking, User, ServiceListing, OpportunityItem } from '../types'
 import { api } from '../services/api'
@@ -19,7 +19,7 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser, setCurrentUser, language = 'en' }) => {
   const t = translations[language]
 
-  const [activeTab, setActiveTab] = useState<'opportunities' | 'bookings' | 'services' | 'profile'>('opportunities')
+  const [activeTab, setActiveTab] = useState<'opportunities' | 'bookings' | 'services'>('opportunities')
   const [bookings, setBookings] = useState<Booking[]>([])
   const [services, setServices] = useState<ServiceListing[]>([])
   const [opportunities, setOpportunities] = useState<OpportunityItem[]>([])
@@ -62,7 +62,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
       const [bookingsData, servicesData, oppsData] = await Promise.all([
         api.getUserBookings(userId).catch(() => []),
         api.getServices().catch(() => []),
-        api.getProviderOpportunities(userId).catch(() => ({ opportunities: [] }))
+        api.getProviderOpportunities(userId).catch(() => ({ provider_id: userId, opportunities: [], total: 0 }))
       ])
       setBookings(bookingsData)
       setServices(servicesData.filter((s) => s.provider_id === userId))
@@ -243,7 +243,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      {/* Profile Overview Card (Balanced White/Slate Theme) */}
+      {/* Profile Overview Card (Hexaware Enterprise Theme) */}
       <div className={`p-6 md:p-8 rounded-2xl border shadow-sm ${
         highContrast ? 'bg-black border-2 border-amber-400 text-white' : 'bg-white border-slate-200 text-slate-900'
       }`}>
@@ -268,7 +268,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingAvatar}
-                className="absolute -bottom-1.5 -right-1.5 bg-blue-600 hover:bg-blue-700 text-white p-1.5 rounded-lg shadow cursor-pointer transition-all"
+                className="absolute -bottom-1.5 -right-1.5 bg-[#4B32E6] hover:bg-[#3629D3] text-white p-1.5 rounded-lg shadow cursor-pointer transition-all"
                 title="Upload Portrait Photo"
               >
                 <Upload className="w-3.5 h-3.5" />
@@ -284,8 +284,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
 
             <div className="space-y-1">
               <div className="flex items-center gap-2.5">
-                <h2 className="text-2xl font-black">{currentUser?.full_name || 'Meenakshi Amma'}</h2>
-                <span className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold px-2 py-0.5 rounded capitalize">
+                <h2 className="text-2xl font-black text-slate-900">{currentUser?.full_name || 'Meenakshi Amma'}</h2>
+                <span className="bg-blue-50 text-[#4B32E6] border border-blue-200 text-xs font-bold px-2 py-0.5 rounded capitalize">
                   {currentUser?.user_type || 'Senior Citizen'}
                 </span>
               </div>
@@ -307,7 +307,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
                     setEditAvailability(currentUser?.availability || '')
                     setShowEditProfile(true)
                   }}
-                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer flex items-center gap-1"
+                  className="text-xs font-semibold text-[#4B32E6] hover:underline cursor-pointer flex items-center gap-1"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Edit Profile</span>
@@ -321,13 +321,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
             <div className={`p-3 rounded-xl border text-center ${
               highContrast ? 'bg-zinc-900 border-amber-400' : 'bg-slate-50 border-slate-200'
             }`}>
-              <span className="text-[11px] font-semibold text-slate-500 uppercase block">{t.totalEarned}</span>
-              <span className="text-lg font-black text-blue-600">{formatINR(totalEarned)}</span>
+              <span className="text-[10px] font-semibold text-slate-500 uppercase block">{t.totalEarned}</span>
+              <span className="text-lg font-black text-[#4B32E6]">{formatINR(totalEarned)}</span>
             </div>
             <div className={`p-3 rounded-xl border text-center ${
               highContrast ? 'bg-zinc-900 border-amber-400' : 'bg-slate-50 border-slate-200'
             }`}>
-              <span className="text-[11px] font-semibold text-slate-500 uppercase block">{t.avgRating}</span>
+              <span className="text-[10px] font-semibold text-slate-500 uppercase block">{t.avgRating}</span>
               <span className="text-lg font-black text-amber-500 flex items-center justify-center gap-1">
                 <Star className="w-4 h-4 fill-amber-400" /> 5.0
               </span>
@@ -335,14 +335,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
             <div className={`p-3 rounded-xl border text-center ${
               highContrast ? 'bg-zinc-900 border-amber-400' : 'bg-slate-50 border-slate-200'
             }`}>
-              <span className="text-[11px] font-semibold text-slate-500 uppercase block">{t.completedServices}</span>
+              <span className="text-[10px] font-semibold text-slate-500 uppercase block">{t.completedServices}</span>
               <span className="text-lg font-black">{bookings.filter((b) => b.status === 'completed').length || 28}</span>
             </div>
             <div className={`p-3 rounded-xl border text-center ${
               highContrast ? 'bg-zinc-900 border-amber-400' : 'bg-slate-50 border-slate-200'
             }`}>
-              <span className="text-[11px] font-semibold text-slate-500 uppercase block">{t.activeOpportunities}</span>
-              <span className="text-lg font-black text-blue-600">{opportunities.length}</span>
+              <span className="text-[10px] font-semibold text-slate-500 uppercase block">{t.activeOpportunities}</span>
+              <span className="text-lg font-black text-[#4B32E6]">{opportunities.length}</span>
             </div>
           </div>
         </div>
@@ -351,23 +351,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
         <div className="mt-5 pt-5 border-t border-slate-200 space-y-2.5">
           <div className="flex items-center justify-between text-xs font-semibold">
             <span className="text-slate-600 flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-blue-600" /> {t.profileStrength}:
+              <Sparkles className="w-4 h-4 text-[#4099FF]" /> {t.profileStrength}:
             </span>
-            <span className="text-blue-600 font-bold">{completeness}% {t.complete}</span>
+            <span className="text-[#4B32E6] font-bold">{completeness}% {t.complete}</span>
           </div>
 
           <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200">
             <div
-              className="bg-blue-600 h-full rounded-full transition-all duration-500"
+              className="bg-[#4B32E6] h-full rounded-full transition-all duration-500"
               style={{ width: `${completeness}%` }}
             ></div>
           </div>
 
           {suggestions.length > 0 && (
             <div className="p-2.5 bg-blue-50/70 rounded-lg border border-blue-100 text-xs text-slate-600 flex items-start gap-2">
-              <Lightbulb className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+              <Lightbulb className="w-4 h-4 text-[#4099FF] shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold text-blue-900">AI Recommendation: </span>
+                <span className="font-bold text-[#4B32E6]">AI Recommendation: </span>
                 <span>{suggestions[0]}</span>
               </div>
             </div>
@@ -391,7 +391,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`px-3.5 py-2 rounded-lg font-semibold text-xs transition-all flex items-center gap-2 cursor-pointer ${
                   isActive
-                    ? 'bg-blue-600 text-white shadow-sm'
+                    ? 'bg-[#4B32E6] text-white shadow-sm'
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                 }`}
               >
@@ -405,7 +405,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
         {activeTab === 'services' && (
           <button
             onClick={() => setShowServiceModal(true)}
-            className="btn-large bg-blue-600 hover:bg-blue-700 text-white text-xs py-1.5 px-3 shadow-sm font-semibold"
+            className="btn-large btn-indigo text-xs py-1.5 px-3 shadow-sm font-semibold flex items-center gap-1.5"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Create New Service</span>
@@ -417,7 +417,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
       {activeTab === 'opportunities' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-black">{t.navOpportunities}</h3>
+            <h3 className="text-lg font-black text-slate-900">{t.navOpportunities}</h3>
             <span className="text-xs text-slate-500 bg-slate-100 px-2.5 py-1 rounded border border-slate-200">
               Personalized neighborhood demand matching your skills
             </span>
@@ -433,18 +433,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-1.5">
-                    <span className="text-[11px] font-bold uppercase bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded">
+                    <span className="text-[10px] font-bold uppercase bg-blue-50 text-[#4B32E6] border border-blue-100 px-2 py-0.5 rounded">
                       {opp.category}
                     </span>
-                    <span className="text-xs text-slate-400">{opp.posted_ago}</span>
+                    <span className="text-xs text-slate-400">{opp.posted_ago || 'Recent'}</span>
                   </div>
 
-                  <h4 className="text-base font-bold leading-snug">{opp.title}</h4>
+                  <h4 className="text-base font-bold text-slate-900 leading-snug">{opp.title}</h4>
                   <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">{opp.description}</p>
 
                   <div className="mt-2.5 flex flex-wrap gap-1.5">
-                    {opp.match_reasons.map((r, rIdx) => (
-                      <span key={rIdx} className="bg-slate-100 text-slate-700 border border-slate-200 text-[11px] font-medium px-2 py-0.5 rounded">
+                    {(opp.match_reasons || [`✓ ${opp.distance_km} km away`, `✓ Matches skills`]).map((r, rIdx) => (
+                      <span key={rIdx} className="bg-slate-50 text-slate-700 border border-slate-200 text-[10px] font-medium px-2 py-0.5 rounded">
                         {r}
                       </span>
                     ))}
@@ -453,14 +453,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
 
                 <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                   <div>
-                    <span className="text-[11px] text-slate-400 block font-semibold">Budget</span>
-                    <span className="text-xs font-bold text-slate-800">{opp.budget_range}</span>
+                    <span className="text-[10px] text-slate-400 block font-semibold uppercase">Budget</span>
+                    <span className="text-sm font-black text-slate-900">{opp.budget_range}</span>
                   </div>
 
                   <div className="flex items-center gap-2.5">
                     <div className="text-right bg-slate-50 px-2.5 py-1 rounded border border-slate-200">
                       <span className="text-[10px] text-slate-400 block font-bold">Match</span>
-                      <span className="text-xs font-black text-blue-600">{opp.match_score}%</span>
+                      <span className="text-xs font-black text-[#4B32E6]">{opp.match_score}%</span>
                     </div>
 
                     {opp.is_applied ? (
@@ -468,15 +468,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
                         disabled
                         className="btn-large bg-emerald-50 text-emerald-700 border border-emerald-300 text-xs py-1.5 px-3 cursor-default font-bold flex items-center gap-1"
                       >
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
                         <span>{t.interestSent}</span>
                       </button>
                     ) : (
                       <button
                         onClick={() => handleExpressInterest(opp.id)}
                         disabled={applyingOppId === opp.id}
-                        className="btn-large bg-blue-600 hover:bg-blue-700 text-white text-xs py-1.5 px-3.5 font-semibold shadow-sm"
+                        className="btn-large btn-indigo text-xs py-1.5 px-3.5 font-semibold shadow-sm flex items-center gap-1.5"
                       >
+                        <Sparkles className="w-3.5 h-3.5 text-[#4099FF]" />
                         <span>{applyingOppId === opp.id ? 'Sending...' : t.expressInterest}</span>
                       </button>
                     )}
@@ -492,10 +493,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
       {activeTab === 'bookings' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-black">{t.navBookings} ({bookings.length})</h3>
+            <h3 className="text-lg font-black text-slate-900">{t.navBookings} ({bookings.length})</h3>
             <button
               onClick={loadDashboardData}
-              className="text-xs font-semibold text-blue-600 hover:underline cursor-pointer"
+              className="text-xs font-semibold text-[#4B32E6] hover:underline cursor-pointer"
             >
               Refresh
             </button>
@@ -518,11 +519,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
                 >
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
-                      <span className={`px-2.5 py-0.5 rounded text-[11px] font-bold uppercase ${
+                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${
                         booking.status === 'completed'
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
                           : booking.status === 'confirmed'
-                            ? 'bg-blue-50 text-blue-700 border border-blue-300'
+                            ? 'bg-blue-50 text-[#4B32E6] border border-blue-300'
                             : 'bg-amber-50 text-amber-700 border border-amber-300'
                       }`}>
                         {booking.status === 'completed' ? t.statusCompleted : booking.status === 'confirmed' ? t.statusConfirmed : t.statusPending}
@@ -530,7 +531,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
                       <span className="text-xs text-slate-400 font-semibold">Booking #{booking.id}</span>
                     </div>
 
-                    <h4 className="text-base font-bold">{booking.service_title}</h4>
+                    <h4 className="text-base font-bold text-slate-900">{booking.service_title}</h4>
                     <p className="text-xs font-medium text-slate-500">
                       Customer: {booking.customer_name} • Date: {booking.scheduled_date}
                     </p>
@@ -560,7 +561,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
                       {booking.status === 'confirmed' && (
                         <button
                           onClick={() => handleUpdateStatus(booking.id, 'completed')}
-                          className="btn-large bg-blue-600 hover:bg-blue-700 text-white text-xs py-1.5 px-3.5 font-semibold"
+                          className="btn-large btn-indigo text-xs py-1.5 px-3.5 font-semibold shadow-sm"
                         >
                           {t.markCompleted}
                         </button>
@@ -569,7 +570,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
                       {booking.status === 'completed' && (
                         <button
                           onClick={() => setReviewBookingId(booking.id)}
-                          className="btn-large bg-amber-500 hover:bg-amber-600 text-white text-xs py-1.5 px-3 font-semibold"
+                          className="btn-large bg-amber-500 hover:bg-amber-600 text-white text-xs py-1.5 px-3 font-semibold flex items-center gap-1"
                         >
                           <Star className="w-3.5 h-3.5 fill-current" />
                           <span>{t.leaveReview}</span>
@@ -592,14 +593,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
               <div key={s.id} className="p-5 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2.5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <span className="text-[11px] font-bold uppercase bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded">
+                    <span className="text-[10px] font-bold uppercase bg-blue-50 text-[#4B32E6] border border-blue-100 px-2 py-0.5 rounded">
                       {s.category}
                     </span>
                     <h4 className="text-base font-bold mt-1 text-slate-900">{s.title}</h4>
                   </div>
                   <button
                     onClick={() => handleDeleteService(s.id)}
-                    className="p-1.5 text-rose-500 hover:bg-rose-50 rounded"
+                    className="p-1.5 text-rose-500 hover:bg-rose-50 rounded cursor-pointer"
                     title="Delete Service"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -609,7 +610,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
                 <p className="text-xs text-slate-600 leading-relaxed">{s.description}</p>
 
                 <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="text-slate-500 font-semibold">{t.hourlyRate}: <strong className="text-blue-700 text-sm">{formatINR(s.price_per_hour)}</strong>/hr</span>
+                  <span className="text-slate-500 font-semibold">{t.hourlyRate}: <strong className="text-[#4B32E6] text-sm">{formatINR(s.price_per_hour)}</strong>/hr</span>
                   <span className="text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">✓ Active</span>
                 </div>
               </div>
@@ -695,7 +696,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
                 <button
                   type="submit"
                   disabled={profileSaving}
-                  className="btn-large w-1/2 bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 font-semibold shadow-sm"
+                  className="btn-large w-1/2 btn-indigo text-xs py-2 font-semibold shadow-sm"
                 >
                   {profileSaving ? 'Saving...' : 'Save Profile'}
                 </button>
@@ -775,7 +776,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
                 <button
                   type="submit"
                   disabled={serviceSaving}
-                  className="btn-large w-1/2 bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 font-semibold shadow-sm"
+                  className="btn-large w-1/2 btn-indigo text-xs py-2 font-semibold shadow-sm"
                 >
                   {serviceSaving ? 'Publishing...' : 'Publish Service'}
                 </button>
@@ -830,7 +831,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
               <button
                 onClick={handleSubmitReview}
                 disabled={reviewSubmitting}
-                className="btn-large w-1/2 bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 font-semibold shadow-sm"
+                className="btn-large w-1/2 btn-indigo text-xs py-2 font-semibold shadow-sm"
               >
                 {reviewSubmitting ? 'Posting...' : 'Submit Review'}
               </button>

@@ -108,26 +108,6 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Hero Banner for Senior Services */}
-      <div className={`rounded-2xl p-6 md:p-8 shadow-sm border ${
-        highContrast 
-          ? 'bg-black text-amber-300 border-2 border-amber-400' 
-          : 'bg-white text-slate-900 border-slate-200'
-      }`}>
-        <div className="max-w-3xl space-y-2.5">
-          <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-800 px-3 py-1 rounded-md text-xs font-semibold uppercase tracking-wider">
-            <ShieldCheck className="w-4 h-4 text-blue-600" />
-            <span>{t.platformNotice}</span>
-          </div>
-          <h2 className="text-2xl md:text-3xl font-black leading-tight text-slate-900">
-            {t.tagline}
-          </h2>
-          <p className="text-sm text-slate-600 leading-relaxed font-medium">
-            Connect with experienced senior citizens and homemakers offering authentic home tiffin, saree blouse tailoring, school tuition, terrace gardening, and life mentoring with transparent ₹ INR pricing.
-          </p>
-        </div>
-      </div>
-
       {/* Category Filter Chips & Search Bar */}
       <div className="space-y-3">
         <form onSubmit={handleSearchSubmit} className="flex flex-col md:flex-row gap-2.5">
@@ -141,7 +121,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
               className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm font-medium transition-all focus:outline-none ${
                 highContrast
                   ? 'bg-zinc-900 border-amber-400 text-white focus:ring-2 focus:ring-amber-300'
-                  : 'bg-white border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 placeholder:text-slate-400'
+                  : 'bg-white border-slate-300 text-slate-900 focus:border-[#4B32E6] focus:ring-2 focus:ring-blue-100 placeholder:text-slate-400'
               }`}
             />
           </div>
@@ -151,7 +131,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
             className={`btn-large ${
               highContrast 
                 ? 'bg-amber-400 text-black border-2 border-white' 
-                : 'bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm text-xs'
+                : 'btn-indigo text-xs py-2 px-4 shadow-sm'
             }`}
           >
             <Search className="w-4 h-4" />
@@ -163,7 +143,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
             onClick={() => setShowFilters(!showFilters)}
             className={`btn-large text-xs ${
               showFilters
-                ? 'bg-blue-50 text-blue-700 font-bold border border-blue-300'
+                ? 'bg-blue-50 text-[#4B32E6] font-bold border border-blue-200'
                 : highContrast ? 'bg-zinc-800 text-amber-300 border border-amber-400' : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
             }`}
           >
@@ -176,7 +156,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
             onClick={() => setShowMap(!showMap)}
             className={`btn-large text-xs ${
               showMap
-                ? 'bg-blue-50 text-blue-700 font-bold border border-blue-300'
+                ? 'bg-blue-50 text-[#4B32E6] font-bold border border-blue-200'
                 : highContrast ? 'bg-zinc-800 text-amber-300 border border-amber-400' : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
             }`}
           >
@@ -191,7 +171,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
             <div className="flex-1 min-w-[220px]">
               <div className="flex justify-between text-xs font-semibold text-slate-600 mb-1">
                 <span>Maximum Hourly Rate</span>
-                <span className="text-blue-700 font-bold">{formatINR(maxPrice)}/hr</span>
+                <span className="text-[#4B32E6] font-bold">{formatINR(maxPrice)}/hr</span>
               </div>
               <input
                 type="range"
@@ -200,15 +180,15 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
                 step={50}
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
-                className="w-full accent-blue-600 cursor-pointer"
+                className="w-full accent-[#4B32E6] cursor-pointer"
               />
             </div>
 
             <button
               onClick={loadServices}
-              className="btn-large bg-blue-600 hover:bg-blue-700 text-white text-xs py-1.5 px-3.5 font-semibold"
+              className="btn-large btn-indigo text-xs py-1.5 px-3.5 font-semibold"
             >
-              Apply
+              Apply Filter
             </button>
           </div>
         )}
@@ -226,13 +206,13 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
                   isSelected
                     ? highContrast
                       ? 'bg-amber-400 text-black shadow-sm border-2 border-white'
-                      : 'bg-blue-600 text-white shadow-sm font-semibold'
+                      : 'bg-[#4B32E6] text-white shadow-sm font-semibold'
                     : highContrast
                       ? 'bg-zinc-900 text-amber-300 border border-amber-400/40 hover:bg-zinc-800'
                       : 'bg-white text-slate-700 border border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-slate-500'}`} />
+                <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-[#4099FF]'}`} />
                 <span>{cat.label}</span>
               </button>
             )
@@ -247,23 +227,23 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
         }`}>
           <div className="flex items-center justify-between pb-3 border-b border-slate-200">
             <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-blue-600" />
-              <h3 className="text-base font-bold">Neighborhood Provider Network (India)</h3>
+              <MapPin className="w-4 h-4 text-[#4099FF]" />
+              <h3 className="text-base font-bold">Senior Provider Neighborhood Network (India)</h3>
             </div>
-            <span className="text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded">
+            <span className="text-xs font-semibold bg-blue-50 text-[#4B32E6] border border-blue-200 px-2.5 py-0.5 rounded">
               Interactive Locality View
             </span>
           </div>
           <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
             {services.map((s) => (
               <div key={s.id} className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-start gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                <div className="w-7 h-7 rounded-full bg-[#4B32E6] text-white flex items-center justify-center font-bold text-xs shrink-0">
                   📍
                 </div>
                 <div>
                   <p className="font-bold text-xs text-slate-900">{s.title}</p>
                   <p className="text-[11px] text-slate-500 mt-0.5">{s.provider_name} • {s.location_name}</p>
-                  <span className="inline-block mt-1 text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                  <span className="inline-block mt-1 text-[11px] font-bold text-[#4B32E6] bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
                     {formatINR(s.price_per_hour)}/hr
                   </span>
                 </div>
@@ -276,7 +256,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
       {/* Loading & Error States */}
       {loading && (
         <div className="py-12 text-center text-slate-400 space-y-2">
-          <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <div className="w-8 h-8 border-3 border-[#4B32E6] border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="text-sm font-semibold text-slate-600">Loading verified senior marketplace listings...</p>
         </div>
       )}
@@ -297,16 +277,16 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
         </div>
       )}
 
-      {/* Services Grid */}
+      {/* Services Grid (White Cards with subtle border & hover lift) */}
       {!loading && !error && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {services.map((service) => (
             <div
               key={service.id}
-              className={`p-5 rounded-xl flex flex-col justify-between transition-all duration-200 border shadow-sm ${
+              className={`card-enterprise flex flex-col justify-between ${
                 highContrast
                   ? 'bg-black border-2 border-amber-400 text-white'
-                  : 'bg-white border-slate-200 text-slate-900 hover:border-slate-300'
+                  : 'bg-white text-slate-900'
               }`}
             >
               <div>
@@ -340,7 +320,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
 
                 {/* Listing Details */}
                 <div className="mt-3 space-y-2">
-                  <div className="inline-block bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold uppercase px-2 py-0.5 rounded">
+                  <div className="inline-block bg-blue-50 text-[#4B32E6] border border-blue-100 text-[10px] font-bold uppercase px-2 py-0.5 rounded">
                     {service.category}
                   </div>
 
@@ -381,7 +361,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
                   className={`btn-large ${
                     highContrast 
                       ? 'bg-amber-400 text-black border-2 border-white' 
-                      : 'bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-1.5 px-3.5 shadow-sm'
+                      : 'btn-indigo text-xs py-1.5 px-3.5 shadow-sm'
                   }`}
                 >
                   <Calendar className="w-3.5 h-3.5" />
@@ -399,7 +379,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
           <div className="max-w-lg w-full p-6 space-y-4 rounded-2xl relative border shadow-xl bg-white text-slate-900 border-slate-200">
             <button
               onClick={() => setSelectedService(null)}
-              className="absolute right-4 top-4 text-slate-400 hover:text-slate-700 p-1.5 rounded-full bg-slate-100"
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-700 p-1.5 rounded-full bg-slate-100 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -433,7 +413,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
                   type="date"
                   value={bookingDate}
                   onChange={(e) => setBookingDate(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg font-medium text-slate-900 focus:outline-none focus:border-blue-500"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg font-medium text-slate-900 focus:outline-none focus:border-[#4B32E6]"
                 />
               </div>
 
@@ -442,7 +422,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
                 <select
                   value={bookingHours}
                   onChange={(e) => setBookingHours(Number(e.target.value))}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg font-semibold text-slate-900 focus:outline-none focus:border-blue-500"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg font-semibold text-slate-900 focus:outline-none focus:border-[#4B32E6]"
                 >
                   <option value={1}>1 Hour ({formatINR(selectedService.price_per_hour * 1)})</option>
                   <option value={2}>2 Hours ({formatINR(selectedService.price_per_hour * 2)})</option>
@@ -458,13 +438,13 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
                   value={bookingNotes}
                   onChange={(e) => setBookingNotes(e.target.value)}
                   placeholder="Share details about what you'd like to learn or schedule..."
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg font-medium text-slate-900 focus:outline-none focus:border-blue-500"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg font-medium text-slate-900 focus:outline-none focus:border-[#4B32E6]"
                 />
               </div>
 
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between font-bold text-slate-900">
                 <span className="text-xs uppercase tracking-wider text-slate-500">Total Estimate:</span>
-                <span className="text-xl text-slate-900">{formatINR(selectedService.price_per_hour * bookingHours)}</span>
+                <span className="text-xl text-[#4B32E6]">{formatINR(selectedService.price_per_hour * bookingHours)}</span>
               </div>
             </div>
 
@@ -478,7 +458,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
               <button
                 onClick={handleConfirmBooking}
                 disabled={bookingSubmitting}
-                className="btn-large w-1/2 bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 font-semibold shadow-sm"
+                className="btn-large w-1/2 btn-indigo text-xs py-2 font-semibold shadow-sm"
               >
                 {bookingSubmitting ? 'Sending Request...' : 'Confirm Request'}
               </button>

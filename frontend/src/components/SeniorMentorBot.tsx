@@ -167,32 +167,30 @@ export const SeniorMentorBot: React.FC<SeniorMentorBotProps> = ({ highContrast, 
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header Container */}
+      {/* Header Container (Deep Navy #0A0F24) */}
       <div className={`p-6 rounded-2xl border shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
-        highContrast ? 'bg-black border-2 border-amber-400 text-white' : 'bg-white border-slate-200 text-slate-900'
+        highContrast ? 'bg-black border-2 border-amber-400 text-white' : 'card-navy-hero text-white'
       }`}>
-        <div className="flex items-center gap-4">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold shrink-0 ${
-            highContrast ? 'bg-amber-400 text-black' : 'bg-blue-600 text-white'
-          }`}>
-            <Bot className="w-7 h-7" />
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-[#4B32E6] text-white flex items-center justify-center font-bold shrink-0 shadow-md">
+            <Bot className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-xl font-black">{t.navMentorBot}</h2>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
+            <h2 className="text-xl font-black text-white">{t.navMentorBot}</h2>
+            <p className="text-xs text-slate-300 font-medium mt-0.5">
               Practical ₹ INR Pricing • Home Business Guidance • Safety & Etiquette
             </p>
           </div>
         </div>
 
         {/* Sub-tab Toggle */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+        <div className="flex items-center gap-1 bg-slate-900/80 p-1 rounded-lg border border-slate-700">
           <button
             onClick={() => setActiveSubTab('chat')}
             className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
               activeSubTab === 'chat'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#4B32E6] text-white shadow-sm'
+                : 'text-slate-300 hover:text-white'
             }`}
           >
             Mentor Chat
@@ -201,8 +199,8 @@ export const SeniorMentorBot: React.FC<SeniorMentorBotProps> = ({ highContrast, 
             onClick={() => setActiveSubTab('business')}
             className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
               activeSubTab === 'business'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#4B32E6] text-white shadow-sm'
+                : 'text-slate-300 hover:text-white'
             }`}
           >
             Business Plan Guide
@@ -217,7 +215,7 @@ export const SeniorMentorBot: React.FC<SeniorMentorBotProps> = ({ highContrast, 
         </div>
       )}
 
-      {/* Tab 1: Senior Mentor Chat */}
+      {/* Tab 1: Senior Mentor Chat (Light Chat Area) */}
       {activeSubTab === 'chat' && (
         <div className={`p-6 rounded-2xl border shadow-sm min-h-[440px] flex flex-col justify-between ${
           highContrast ? 'bg-black border-2 border-amber-400 text-white' : 'bg-white border-slate-200 text-slate-900'
@@ -232,38 +230,38 @@ export const SeniorMentorBot: React.FC<SeniorMentorBotProps> = ({ highContrast, 
                 <div
                   className={`max-w-2xl p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${
                     msg.sender === 'user'
-                      ? 'bg-blue-600 text-white font-semibold rounded-br-none'
+                      ? 'bg-[#4B32E6] text-white font-medium rounded-br-none'
                       : highContrast
                         ? 'bg-zinc-900 text-amber-300 border border-amber-400 rounded-bl-none'
-                        : 'bg-slate-50 text-slate-800 border border-slate-200 rounded-bl-none'
+                        : 'bg-[#F3F6FA] text-slate-800 border border-slate-200 rounded-bl-none'
                   }`}
                 >
                   {msg.sender === 'bot' && (
-                    <div className="flex items-center justify-between gap-2 mb-1.5 text-xs font-bold text-blue-700">
+                    <div className="flex items-center justify-between gap-2 mb-1.5 text-xs font-bold text-[#4B32E6]">
                       <div className="flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                        <Sparkles className="w-3.5 h-3.5 text-[#4099FF]" />
                         <span>SilverBot Business Mentor</span>
                       </div>
                       <button
                         onClick={() => handlePlayAudio(msg.text)}
-                        className="p-1 rounded text-slate-400 hover:text-blue-600 cursor-pointer"
+                        className="p-1 rounded text-slate-400 hover:text-[#4B32E6] cursor-pointer"
                         title={isPlayingAudio ? t.stopAudio : t.playAudio}
                       >
-                        {isPlayingAudio ? <VolumeX className="w-4 h-4 text-blue-600" /> : <Volume2 className="w-4 h-4" />}
+                        {isPlayingAudio ? <VolumeX className="w-4 h-4 text-[#4B32E6]" /> : <Volume2 className="w-4 h-4" />}
                       </button>
                     </div>
                   )}
                   <p>{msg.text}</p>
                 </div>
 
-                {/* Suggested Action Chips */}
+                {/* Suggested Action Chips (Shortcuts, not replacement for chat) */}
                 {msg.suggestedActions && msg.suggestedActions.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {msg.suggestedActions.map((action, actionIdx) => (
                       <button
                         key={actionIdx}
                         onClick={() => handleSend(action)}
-                        className="px-3 py-1 bg-slate-50 text-slate-700 text-xs font-medium rounded-full border border-slate-200 hover:bg-slate-100 hover:text-blue-700 transition-all cursor-pointer"
+                        className="px-3 py-1 bg-slate-50 text-slate-700 text-xs font-medium rounded-full border border-slate-200 hover:bg-slate-100 hover:text-[#4B32E6] transition-all cursor-pointer"
                       >
                         💡 {action}
                       </button>
@@ -275,7 +273,7 @@ export const SeniorMentorBot: React.FC<SeniorMentorBotProps> = ({ highContrast, 
 
             {loading && (
               <div className="flex items-center gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-slate-600 text-xs">
-                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-4 h-4 border-2 border-[#4B32E6] border-t-transparent rounded-full animate-spin"></div>
                 <span className="font-semibold">{t.aiThinking}</span>
               </div>
             )}
@@ -296,13 +294,13 @@ export const SeniorMentorBot: React.FC<SeniorMentorBotProps> = ({ highContrast, 
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={language === 'ta' ? 'விலை, வாடிக்கையாளர் ஆலோசனை பற்றி கேளுங்கள்...' : "Ask SilverBot about pricing in ₹ INR, customer safety, or tiffin prep..."}
-                  className="w-full p-3 pr-12 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-sm font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full p-3 pr-12 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-sm font-medium focus:outline-none focus:border-[#4B32E6] focus:ring-2 focus:ring-blue-100"
                 />
                 <button
                   type="button"
                   onClick={toggleVoiceRecording}
                   className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-xs cursor-pointer ${
-                    isRecording ? 'text-rose-600 animate-pulse' : 'text-slate-400 hover:text-blue-600'
+                    isRecording ? 'text-rose-600 animate-pulse' : 'text-slate-400 hover:text-[#4B32E6]'
                   }`}
                   title={t.voiceMic}
                 >
@@ -316,7 +314,7 @@ export const SeniorMentorBot: React.FC<SeniorMentorBotProps> = ({ highContrast, 
                 className={`btn-large ${
                   highContrast 
                     ? 'bg-amber-400 text-black border-2 border-white' 
-                    : 'bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm'
+                    : 'btn-indigo text-xs py-2 px-4 shadow-sm'
                 }`}
               >
                 <Send className="w-4 h-4" />
@@ -327,7 +325,7 @@ export const SeniorMentorBot: React.FC<SeniorMentorBotProps> = ({ highContrast, 
         </div>
       )}
 
-      {/* Tab 2: Business Guidance Generator */}
+      {/* Tab 2: Business Guidance Generator (Light Cards with Labeled Disclaimer) */}
       {activeSubTab === 'business' && (
         <div className="space-y-6">
           <form onSubmit={handleGenerateBusinessGuidance} className={`p-6 rounded-2xl border shadow-sm space-y-4 ${
@@ -346,7 +344,7 @@ export const SeniorMentorBot: React.FC<SeniorMentorBotProps> = ({ highContrast, 
                   value={businessQuery}
                   onChange={(e) => setBusinessQuery(e.target.value)}
                   placeholder="e.g. Sell homemade pickles, saree blouse tailoring, balcony gardening"
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-sm font-medium focus:outline-none focus:border-blue-500"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-sm font-medium focus:outline-none focus:border-[#4B32E6]"
                 />
               </div>
 
@@ -357,7 +355,7 @@ export const SeniorMentorBot: React.FC<SeniorMentorBotProps> = ({ highContrast, 
                   value={businessLocation}
                   onChange={(e) => setBusinessLocation(e.target.value)}
                   placeholder="e.g. Dadar, Mumbai or Mylapore, Chennai"
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-sm font-medium focus:outline-none focus:border-blue-500"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-sm font-medium focus:outline-none focus:border-[#4B32E6]"
                 />
               </div>
             </div>
@@ -365,7 +363,7 @@ export const SeniorMentorBot: React.FC<SeniorMentorBotProps> = ({ highContrast, 
             <button
               type="submit"
               disabled={businessLoading}
-              className="btn-large w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm text-sm"
+              className="btn-large w-full btn-indigo shadow-sm text-sm"
             >
               {businessLoading ? (
                 <>
@@ -374,33 +372,34 @@ export const SeniorMentorBot: React.FC<SeniorMentorBotProps> = ({ highContrast, 
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className="w-4 h-4 text-[#4099FF]" />
                   <span>Generate Business Guidance Plan</span>
                 </>
               )}
             </button>
           </form>
 
-          {/* Sectioned Guidance Results */}
+          {/* Sectioned Guidance Results with Labeled Disclaimer */}
           {guidanceResult && (
             <div className="space-y-4">
-              <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800 font-medium">
-                ℹ️ {guidanceResult.disclaimer}
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>AI-generated guidance — please verify before acting</span>
               </div>
 
               {/* 1. Idea & Target Customers */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-1.5">
-                  <div className="flex items-center gap-2 text-blue-700 font-bold text-xs uppercase">
-                    <Lightbulb className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-[#4B32E6] font-bold text-xs uppercase">
+                    <Lightbulb className="w-4 h-4 text-[#4099FF]" />
                     <span>1. Concept & Market Demand</span>
                   </div>
                   <p className="text-slate-700 text-sm leading-relaxed">{guidanceResult.idea_summary}</p>
                 </div>
 
                 <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-1.5">
-                  <div className="flex items-center gap-2 text-blue-700 font-bold text-xs uppercase">
-                    <Users className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-[#4B32E6] font-bold text-xs uppercase">
+                    <Users className="w-4 h-4 text-[#4099FF]" />
                     <span>2. Target Customers</span>
                   </div>
                   <p className="text-slate-700 text-sm leading-relaxed">{guidanceResult.target_customers}</p>
@@ -410,16 +409,16 @@ export const SeniorMentorBot: React.FC<SeniorMentorBotProps> = ({ highContrast, 
               {/* 2. Pricing & Marketing */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-1.5">
-                  <div className="flex items-center gap-2 text-blue-700 font-bold text-xs uppercase">
-                    <DollarSign className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-[#4B32E6] font-bold text-xs uppercase">
+                    <DollarSign className="w-4 h-4 text-[#4099FF]" />
                     <span>3. Pricing Strategy (in ₹ INR)</span>
                   </div>
-                  <p className="text-slate-800 text-sm leading-relaxed font-bold">{guidanceResult.pricing_strategy}</p>
+                  <p className="text-slate-900 text-sm leading-relaxed font-bold">{guidanceResult.pricing_strategy}</p>
                 </div>
 
                 <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-1.5">
-                  <div className="flex items-center gap-2 text-blue-700 font-bold text-xs uppercase">
-                    <Target className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-[#4B32E6] font-bold text-xs uppercase">
+                    <Target className="w-4 h-4 text-[#4099FF]" />
                     <span>4. Zero-Cost Neighborhood Marketing</span>
                   </div>
                   <p className="text-slate-700 text-sm leading-relaxed">{guidanceResult.marketing_and_outreach}</p>
@@ -428,8 +427,8 @@ export const SeniorMentorBot: React.FC<SeniorMentorBotProps> = ({ highContrast, 
 
               {/* 3. First 3 Steps & Packaging */}
               <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
-                <div className="flex items-center gap-2 text-blue-700 font-bold text-xs uppercase">
-                  <CheckCircle2 className="w-4 h-4" />
+                <div className="flex items-center gap-2 text-[#4B32E6] font-bold text-xs uppercase">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   <span>5. Your First 3 Immediate Action Steps</span>
                 </div>
                 <div className="space-y-1.5">
@@ -441,8 +440,8 @@ export const SeniorMentorBot: React.FC<SeniorMentorBotProps> = ({ highContrast, 
                 </div>
 
                 <div className="pt-2.5 border-t border-slate-100">
-                  <div className="flex items-center gap-2 text-blue-700 font-bold text-xs uppercase mb-1">
-                    <Package className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-[#4B32E6] font-bold text-xs uppercase mb-1">
+                    <Package className="w-4 h-4 text-[#4099FF]" />
                     <span>Packaging & Hygiene Standards</span>
                   </div>
                   <p className="text-slate-600 text-xs leading-relaxed">{guidanceResult.packaging_and_hygiene}</p>

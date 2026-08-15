@@ -82,18 +82,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, highCo
           <X className="w-4 h-4" />
         </button>
 
-        {/* Left Side: Brand Story & Values */}
+        {/* Left Side: Deep Navy Brand Panel (#0A0F24) */}
         <div className={`p-6 md:col-span-2 flex flex-col justify-between ${
-          highContrast ? 'bg-zinc-950 text-amber-300 border-r border-amber-400' : 'bg-[#0F2744] text-white border-r border-slate-800'
+          highContrast ? 'bg-zinc-950 text-amber-300 border-r border-amber-400' : 'card-navy-hero text-white border-r border-slate-800'
         }`}>
           <div>
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shadow-sm">
+              <div className="w-10 h-10 rounded-xl bg-[#4B32E6] text-white flex items-center justify-center font-bold shadow-sm">
                 <HeartHandshake className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-xl font-black">SilverHands</h3>
-                <span className="text-[10px] font-bold text-sky-300 uppercase tracking-wider">v3.1 • India</span>
+                <h3 className="text-xl font-black text-white">SilverHands</h3>
+                <span className="text-[10px] font-bold text-[#4099FF] uppercase tracking-wider">v3.2 • Enterprise</span>
               </div>
             </div>
 
@@ -111,7 +111,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, highCo
                 <span>100% Identity-Verified Network</span>
               </div>
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-sky-400 shrink-0" />
+                <Sparkles className="w-4 h-4 text-[#4099FF] shrink-0" />
                 <span>AI Skill Extraction & Bio Builder</span>
               </div>
               <div className="flex items-center gap-2">
@@ -122,17 +122,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, highCo
           </div>
 
           <div className="mt-6 pt-3 border-t border-slate-800 text-[11px] text-slate-400">
-            Hexaware Hackathon 2026 • Social Impact
+            Built for Hexaware Hackathon 2026 • Senior Livelihood
           </div>
         </div>
 
-        {/* Right Side: Split-screen Form */}
+        {/* Right Side: Clean White Form Panel */}
         <div className="p-6 md:col-span-3 flex flex-col justify-center">
           <div className="mb-4">
             <h3 className="text-xl font-black text-slate-900">
               {isLogin ? 'Welcome Back' : step === 1 ? t.register : 'Profile & Skill Details'}
             </h3>
-            <p className="text-xs font-semibold text-blue-600 mt-0.5 uppercase tracking-wider">
+            <p className="text-xs font-semibold text-[#4B32E6] mt-0.5 uppercase tracking-wider">
               {isLogin ? 'Sign in to access your dashboard' : `Step ${step} of 2 • ${step === 1 ? 'Basic Info' : 'Experience & Location'}`}
             </p>
           </div>
@@ -153,7 +153,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, highCo
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-blue-500"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-[#4B32E6]"
                     placeholder="e.g. meenakshi.amma@example.com"
                   />
                 </div>
@@ -166,13 +166,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, highCo
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full p-2.5 pr-10 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-blue-500"
+                      className="w-full p-2.5 pr-10 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-[#4B32E6]"
                       placeholder="Enter your password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -196,7 +196,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, highCo
                         onClick={() => setUserType(btn.id as any)}
                         className={`p-2 rounded-lg text-xs font-semibold border text-center transition-all cursor-pointer ${
                           userType === btn.id
-                            ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                            ? 'bg-[#4B32E6] border-[#4B32E6] text-white shadow-sm'
                             : 'bg-slate-50 border-slate-300 text-slate-700 hover:border-slate-400'
                         }`}
                       >
@@ -213,7 +213,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, highCo
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-blue-500"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-[#4B32E6]"
                     placeholder="e.g. Ramesh Patel"
                   />
                 </div>
@@ -225,7 +225,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, highCo
                       type="number"
                       value={age}
                       onChange={(e) => setAge(Number(e.target.value))}
-                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-blue-500"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-[#4B32E6]"
                     />
                   </div>
                   <div>
@@ -234,7 +234,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, highCo
                       type="text"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-blue-500"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-[#4B32E6]"
                       placeholder="+91 98XXX XXXXX"
                     />
                   </div>
@@ -247,7 +247,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, highCo
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-blue-500"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-[#4B32E6]"
                     placeholder="name@example.com"
                   />
                 </div>
@@ -259,7 +259,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, highCo
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-blue-500"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-[#4B32E6]"
                     placeholder="Min 6 characters"
                   />
                 </div>
@@ -274,7 +274,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, highCo
                     required
                     value={locationName}
                     onChange={(e) => setLocationName(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-blue-500"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-[#4B32E6]"
                     placeholder="e.g. Dadar, Mumbai or Mylapore, Chennai"
                   />
                 </div>
@@ -285,7 +285,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, highCo
                     type="text"
                     value={languages}
                     onChange={(e) => setLanguages(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-blue-500"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-[#4B32E6]"
                     placeholder="e.g. Tamil, Hindi, English"
                   />
                 </div>
@@ -296,7 +296,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, highCo
                     rows={3}
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-blue-500"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-[#4B32E6]"
                     placeholder="Describe what skills you'd like to share or services you're seeking..."
                   />
                 </div>
@@ -322,7 +322,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, highCo
                 className={`btn-large flex-1 text-xs py-2 font-semibold shadow-sm ${
                   highContrast 
                     ? 'bg-amber-400 text-black font-bold' 
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'btn-indigo'
                 }`}
               >
                 {loading ? (
@@ -350,7 +350,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, highCo
                 setStep(1)
                 setError(null)
               }}
-              className="font-semibold text-blue-600 hover:underline cursor-pointer"
+              className="font-semibold text-[#4B32E6] hover:underline cursor-pointer"
             >
               {isLogin ? "New to SilverHands? Create a free account" : "Already have an account? Sign in"}
             </button>

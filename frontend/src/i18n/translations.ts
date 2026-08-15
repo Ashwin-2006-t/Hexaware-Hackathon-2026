@@ -60,6 +60,19 @@ export interface TranslationDict {
   statusPending: string
   statusConfirmed: string
   statusCompleted: string
+  heroCtaFind: string
+  heroCtaOffer: string
+  howItWorks: string
+  step1Title: string
+  step1Desc: string
+  step2Title: string
+  step2Desc: string
+  step3Title: string
+  step3Desc: string
+  step4Title: string
+  step4Desc: string
+  aiShowcaseTitle: string
+  aiShowcaseSub: string
 }
 
 export const translations: Record<Language, TranslationDict> = {
@@ -122,7 +135,20 @@ export const translations: Record<Language, TranslationDict> = {
     leaveReview: "Leave Review",
     statusPending: "Pending",
     statusConfirmed: "Confirmed",
-    statusCompleted: "Completed"
+    statusCompleted: "Completed",
+    heroCtaFind: "Find Opportunities",
+    heroCtaOffer: "Offer Your Skills",
+    howItWorks: "How It Works",
+    step1Title: "Discover Skills",
+    step1Desc: "Speak or type in plain language to identify marketable skills.",
+    step2Title: "Build Profile",
+    step2Desc: "AI structures your bio, experience, and fair ₹ INR hourly rates.",
+    step3Title: "Find Opportunity",
+    step3Desc: "Smart 5-factor matching connects you to verified neighborhood clients.",
+    step4Title: "Earn & Grow",
+    step4Desc: "Complete bookings safely, earn 5-star reviews, and build trust.",
+    aiShowcaseTitle: "Enterprise-Grade AI Architecture",
+    aiShowcaseSub: "5 purpose-built AI agents delivering grounded, fair livelihood recommendations."
   },
   ta: {
     tagline: "வாழ்நாள் அனுபவங்களை புதிய வாய்ப்புகளாக மாற்றுங்கள்.",
@@ -183,7 +209,20 @@ export const translations: Record<Language, TranslationDict> = {
     leaveReview: "மதிப்பாய்வு எழுது",
     statusPending: "நிலுவையில்",
     statusConfirmed: "உறுதியானது",
-    statusCompleted: "முடிக்கப்பட்டது"
+    statusCompleted: "முடிக்கப்பட்டது",
+    heroCtaFind: "வாய்ப்புகளைக் காண்க",
+    heroCtaOffer: "திறன்களை வழங்குக",
+    howItWorks: "இது எவ்வாறு செயல்படுகிறது",
+    step1Title: "திறனைக் கண்டறிதல்",
+    step1Desc: "குரல் அல்லது உரை மூலம் உங்கள் அனுபவத்தை எளிதாக பதிவு செய்யுங்கள்.",
+    step2Title: "சுயவிவரம் உருவாக்குதல்",
+    step2Desc: "AI உங்கள் விவரக்குறிப்பு மற்றும் நியாயமான ₹ INR கட்டணத்தை உருவாக்குகிறது.",
+    step3Title: "வாய்ப்பைப் பெறுதல்",
+    step3Desc: "5-காரணி ஸ்மார்ட் பொருத்தம் அருகிலுள்ள வாடிக்கையாளர்களுடன் இணைக்கிறது.",
+    step4Title: "வருவாய் ஈட்டி வளர்க",
+    step4Desc: "பணிகளை வெற்றிகரமாக முடித்து, 5-star மதிப்பாய்வுகளுடன் முன்னேறுங்கள்.",
+    aiShowcaseTitle: "நவீன AI கட்டமைப்பு",
+    aiShowcaseSub: "5 பிரத்யேக AI முகவர்கள் துல்லியமான மற்றும் நியாயமான வழிகாட்டலை வழங்குகின்றன."
   },
   hi: {
     tagline: "आजीवन कौशल को नए अवसरों में बदलें।",
@@ -244,6 +283,19 @@ export const translations: Record<Language, TranslationDict> = {
     leaveReview: "समीक्षा लिखें",
     statusPending: "लंबित",
     statusConfirmed: "पुष्टि की गई",
-    statusCompleted: "पूर्ण"
+    statusCompleted: "पूर्ण",
+    heroCtaFind: "अवसर खोजें",
+    heroCtaOffer: "अपना कौशल जोड़ें",
+    howItWorks: "यह कैसे काम करता है",
+    step1Title: "कौशल खोजें",
+    step1Desc: "आवाज या टाइप करके अपनी जीवन भर की कला को दर्ज करें।",
+    step2Title: "प्रोफ़ाइल बनाएं",
+    step2Desc: "AI आपकी प्रोफ़ाइल और उचित ₹ INR प्रति घंटा दर निर्धारित करता है।",
+    step3Title: "अवसर प्राप्त करें",
+    step3Desc: "5-कारक स्मार्ट मैचिंग आपको स्थानीय ग्राहकों से जोड़ती है।",
+    step4Title: "कमाएं और बढ़ें",
+    step4Desc: "सुरक्षित रूप से बुकिंग पूरी करें, 5-स्टार रेटिंग पाएं और विश्वास बनाएं।",
+    aiShowcaseTitle: "उन्नत AI संरचना",
+    aiShowcaseSub: "5 समर्पित AI एजेंट सटीक और उचित आजीविका सुझाव प्रदान करते हैं।"
   }
 }

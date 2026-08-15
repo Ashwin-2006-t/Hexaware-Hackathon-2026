@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Header } from './components/Header'
+import { HeroAndFlow } from './components/HeroAndFlow'
 import { Marketplace } from './components/Marketplace'
+import { OpportunitiesView } from './components/OpportunitiesView'
 import { SmartMatch } from './components/SmartMatch'
 import { SkillExtractor } from './components/SkillExtractor'
 import { SeniorMentorBot } from './components/SeniorMentorBot'
@@ -8,7 +10,7 @@ import { Dashboard } from './components/Dashboard'
 import { AuthModal } from './components/AuthModal'
 import type { User } from './types'
 import { api } from './services/api'
-import { Activity, Database, Sparkles, HeartHandshake } from 'lucide-react'
+import { Activity, Database, Sparkles, HeartHandshake, Shield, HelpCircle } from 'lucide-react'
 import type { Language } from './i18n/translations'
 
 export default function App() {
@@ -88,9 +90,9 @@ export default function App() {
     <div className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
       highContrast 
         ? 'bg-black text-white' 
-        : 'bg-[#F8FAFC] text-slate-900'
+        : 'bg-[#F7F9FC] text-slate-900'
     }`}>
-      {/* Navigation Header */}
+      {/* Navigation Header (Deep Navy #0A0F24) */}
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -105,7 +107,7 @@ export default function App() {
         onOpenAuth={() => setShowAuthModal(true)}
       />
 
-      {/* Backend & AI Real-Time Status Toolbar */}
+      {/* Backend & Real Gemini Engine Status Toolbar */}
       <div className={`border-b px-4 md:px-8 py-1.5 text-xs font-semibold flex flex-wrap items-center justify-between gap-4 ${
         highContrast 
           ? 'bg-zinc-950 border-amber-400 text-amber-300' 
@@ -114,12 +116,12 @@ export default function App() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
             <Activity className={`w-3.5 h-3.5 ${backendOnline ? 'text-emerald-600 animate-pulse' : 'text-rose-500'}`} />
-            <span>FastAPI Backend: <strong className={backendOnline ? 'text-emerald-700 font-bold' : 'text-rose-600'}>{backendOnline ? 'Online (v3.1)' : 'Disconnected'}</strong></span>
+            <span>FastAPI Backend: <strong className={backendOnline ? 'text-emerald-700 font-bold' : 'text-rose-600'}>{backendOnline ? 'Online (v3.2)' : 'Disconnected'}</strong></span>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-            <span>Gemini AI Engine: <strong className="text-blue-700 font-bold">Real Dynamic Google GenAI (₹ INR Ready)</strong></span>
+            <Sparkles className="w-3.5 h-3.5 text-[#4099FF]" />
+            <span>Gemini AI Engine: <strong className="text-[#4B32E6] font-bold">Dynamic GenAI SDK (₹ INR Verified)</strong></span>
           </div>
         </div>
 
@@ -140,18 +142,35 @@ export default function App() {
             }`}
           >
             <Database className="w-3.5 h-3.5" />
-            <span>{seeding ? 'Seeding Demo Data...' : 'Reset / Seed Demo Providers'}</span>
+            <span>{seeding ? 'Seeding Demo Data...' : 'Reset / Seed Demo Data'}</span>
           </button>
         </div>
       </div>
 
       {/* Main Content Viewport */}
-      <main className="max-w-7xl mx-auto px-4 md:px-8 py-6 flex-1 w-full">
+      <main className="max-w-7xl mx-auto px-4 md:px-8 py-6 flex-1 w-full space-y-6">
+        {/* Marketplace / Home Tab: includes Landing Hero, How It Works, and Enterprise AI showcase */}
         {activeTab === 'marketplace' && (
-          <Marketplace
+          <>
+            <HeroAndFlow
+              highContrast={highContrast}
+              language={language}
+              onNavigateTab={(tab) => setActiveTab(tab)}
+              onOpenAuth={() => setShowAuthModal(true)}
+            />
+            <Marketplace
+              highContrast={highContrast}
+              currentUser={currentUser}
+              onBookingSuccess={() => setActiveTab('dashboard')}
+              language={language}
+            />
+          </>
+        )}
+
+        {activeTab === 'opportunities' && (
+          <OpportunitiesView
             highContrast={highContrast}
             currentUser={currentUser}
-            onBookingSuccess={() => setActiveTab('dashboard')}
             language={language}
           />
         )}
@@ -187,20 +206,44 @@ export default function App() {
         )}
       </main>
 
-      {/* Enterprise SaaS + Social Impact Footer */}
-      <footer className={`border-t py-6 text-center text-xs transition-colors ${
+      {/* Hexaware-Inspired Enterprise Deep Navy Footer (#0A0F24) */}
+      <footer className={`border-t py-10 transition-colors ${
         highContrast 
           ? 'bg-black border-amber-400 text-amber-400' 
-          : 'bg-white border-slate-200 text-slate-500'
+          : 'bg-[#0A0F24] border-slate-800 text-slate-400'
       }`}>
-        <div className="max-w-6xl mx-auto px-4 space-y-1.5">
-          <div className="flex items-center justify-center gap-2 font-bold text-slate-900">
-            <HeartHandshake className="w-4 h-4 text-blue-600" />
-            <span>SilverHands • Turning Lifelong Skills Into New Opportunities</span>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#4B32E6] to-[#4099FF] text-white flex items-center justify-center font-bold">
+                <HeartHandshake className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-white">SilverHands</h3>
+                <p className="text-xs text-slate-400">Turning Lifelong Skills Into New Opportunities</p>
+              </div>
+            </div>
+
+            {/* Senior Friendly Quick Navigation */}
+            <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-slate-300">
+              <button onClick={() => setActiveTab('marketplace')} className="hover:text-white cursor-pointer">Marketplace</button>
+              <button onClick={() => setActiveTab('opportunities')} className="hover:text-white cursor-pointer">Opportunities</button>
+              <button onClick={() => setActiveTab('smart-match')} className="hover:text-white cursor-pointer">Smart Match</button>
+              <button onClick={() => setActiveTab('skill-builder')} className="hover:text-white cursor-pointer">Skill Builder</button>
+              <button onClick={() => setActiveTab('mentor-bot')} className="hover:text-white cursor-pointer">AI Assistant</button>
+              <button onClick={() => setActiveTab('dashboard')} className="hover:text-white cursor-pointer">Dashboard</button>
+            </div>
           </div>
-          <p className="text-[11px] text-slate-400">
-            Hexaware Hackathon 2026 • Built with FastAPI, SQLAlchemy, React, TypeScript, Leaflet, ₹ INR Formatting & Real Google Gemini AI
-          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5 text-[#4099FF]" /> 100% Identity-Verified Platform</span>
+              <span className="flex items-center gap-1"><HelpCircle className="w-3.5 h-3.5 text-[#4099FF]" /> Accessibility & Multilingual Ready</span>
+            </div>
+            <p className="text-[11px] text-slate-400 text-center sm:text-right">
+              Built for Hexaware Hackathon 2026 • AI Senior Livelihood Initiative
+            </p>
+          </div>
         </div>
       </footer>
 
