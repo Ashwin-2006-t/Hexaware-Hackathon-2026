@@ -26,29 +26,33 @@ def get_genai_client():
     return None
 
 
+import time
+
 def get_candidate_models() -> List[str]:
     """Returns prioritized candidate models for dynamic AI generations."""
     primary = (settings.GEMINI_MODEL or "").strip() or "gemini-flash-latest"
-    candidates = [primary, "gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"]
+    candidates = [primary, "gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite"]
     # De-duplicate while preserving order
     seen = set()
     return [m for m in candidates if not (m in seen or seen.add(m))]
 
 
 def call_gemini_with_fallback(client, prompt: str) -> Optional[str]:
-    """Tries generating content with candidate models to handle transient 503 or rate spikes."""
+    """Tries generating content with candidate models with brief retry on transient overload."""
     models = get_candidate_models()
-    for model_name in models:
-        try:
-            response = client.models.generate_content(
-                model=model_name,
-                contents=prompt
-            )
-            if response and response.text:
-                return response.text.strip()
-        except Exception as e:
-            logger.info(f"Model {model_name} attempt failed: {e}. Trying next candidate...")
-            continue
+    for attempt in range(2):
+        for model_name in models:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt
+                )
+                if response and response.text:
+                    return response.text.strip()
+            except Exception as e:
+                logger.info(f"Model {model_name} attempt {attempt+1} failed: {e}. Trying next candidate...")
+                continue
+        time.sleep(0.5)
     return None
 
 

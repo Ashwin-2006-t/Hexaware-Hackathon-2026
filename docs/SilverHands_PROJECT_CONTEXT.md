@@ -1,42 +1,35 @@
 # SilverHands Project Context & Source of Truth
 
 **Tagline:** "Turning Lifelong Skills Into New Opportunities."  
-**Current Version:** v3.2.0 (Hexaware-Inspired Enterprise UI + Dedicated Opportunities View + 5 Animated Factor Bars + Landing Hero & AI Showcase + Full Multilingual EN/TA/HI)  
-**Status:** Complete, India-Ready & Fully Verified
+**Current Version:** v4.3.0 (Mobile App Voice Assistance & Audio Playback + Expo SDK 54 Native Integration)  
+**Status:** Complete, India-Ready & Fully Verified Across Web & Mobile
 
 ---
 
-## 1. Project Overview
-SilverHands is an AI-powered, senior-friendly livelihood platform connecting skilled Indian senior citizens and homemakers with local neighbors seeking trusted home cooking/tiffin, school tutoring, saree blouse tailoring, terrace kitchen gardening, and life mentoring.
+## 1. Project Overview & Multi-Client Architecture
+SilverHands is an AI-powered livelihood platform connecting skilled Indian senior citizens and homemakers with local neighborhood demand for home cooking/tiffin, school tutoring, saree blouse tailoring, terrace kitchen gardening, and life mentoring.
 
-### Core Architecture
-- **Frontend:** React 19, TypeScript, Tailwind CSS, Lucide Icons, Leaflet Maps (Vite v8.2)
-- **Design System:** Hexaware-Inspired Enterprise SaaS Visual Language:
-  - Deep Navy branding header & hero (`#0A0F24` / `#0D1127` / `#131838`)
-  - Indigo/Purple primary CTAs (`#4B32E6` / `#3629D3`)
-  - Cyan highlights and active progress bars (`#4099FF` / `#48A9FE`)
-  - Light neutral canvas (`#F7F9FC`, `#FFFFFF`, `#F3F6FA`, `#EEF3F8`)
-  - Clean white cards with subtle `#E2E8F0` borders and gentle hover lift (`transform: translateY(-2px)`)
-  - Dark slate typography (`#111827`, `#374151`, `#64748B`)
-  - High Contrast mode preserving brand hierarchy with `#000000` black and `#FACC15` amber gold
-  - 3-tier font size scaling (A: 16px, A+: 19px, A++: 22px) persisted in `localStorage`
-- **Backend:** Python, FastAPI, SQLAlchemy, Uvicorn, SQLite (`silverhands.db`) / PostgreSQL
-- **AI Integration:** Real Google GenAI SDK (`google-genai`) with Gemini models (`gemini-flash-latest`, `gemini-3.5-flash`, `gemini-3.1-flash-lite`) supporting:
-  1. Natural Language & Voice Skill Extraction (`/api/v1/ai/extract-skills`)
-  2. Grounded Profile Bio Builder with verification notice (`/api/v1/ai/profile-builder`)
-  3. 5-Part Micro-Business Guidance Plan (`/api/v1/ai/business-guidance`)
-  4. Conversational Senior Mentor Bot (`/api/v1/ai/assistant`) in English, Tamil, and Hindi
-  5. Deterministic 5-Factor Match Rationale Explainer (`/api/v1/ai/smart-match`)
-- **Multilingual Support:** English, Tamil (தமிழ்), and Hindi (हिन्दी) across all navigation, hero, marketplace, booking, AI chat, business guidance, and forms.
-- **Voice Assistant:** Web Speech STT in `en-IN`, `ta-IN`, `hi-IN` $\to$ backend Gemini response in same language $\to$ Web Speech Synthesis TTS audio playback.
-- **Opportunity Engine & Express Interest:**
-  - Dedicated `OpportunitiesView` tab + Dashboard opportunities feed.
-  - `POST /api/v1/providers/{id}/opportunities/{id}/interest` with duplicate rejection (400) and instant UI state flip to "Interest Sent ✓".
-- **Localization:** 100% India-ready with ₹ INR currency formatting, Indian number grouping, Indian phone numbers, and bundled local senior portrait assets (`/avatars/seed/*.jpg`).
+```
+Hexaware-Hackathon-2026/
+├── backend/     ← FastAPI, SQLAlchemy, SQLite/PostgreSQL, Real Google GenAI SDK (Port 8000)
+├── frontend/    ← React 19, TypeScript, Vite Web Client with Web Speech STT/TTS (Port 5173)
+├── mobile/      ← React Native 0.81.5, Expo SDK 54, expo-speech TTS & VoiceInput Assistance (Port 8081 / Expo Go)
+└── docs/        ← SilverHands_PROJECT_CONTEXT.md (v4.3.0 Source of Truth)
+```
+
+### 1.1 Mobile Voice Assistance (v4.3.0)
+- **Text-to-Speech (TTS) Engine:**
+  - Integrated `expo-speech` with multilingual voice playback in **Indian English (`en-IN`)**, **Tamil (`ta-IN`)**, and **Hindi (`hi-IN`)** at senior-friendly pacing (rate: `0.92`).
+  - **SilverBot Voice Playback:** Listen button (`🔊 Listen` / `⏹️ Stop`) on all AI mentor answers in `AssistantScreen.tsx`.
+  - **Bio & Advice Voice Playback:** Senior biography and AI mentor advice audio playback in `SkillBuilderScreen.tsx`.
+- **Speech-to-Text (STT) & Voice Input Assistance (`VoiceInputButton`):**
+  - Web & Browser Speech Recognition for live microphone dictation.
+  - Senior-friendly Voice Assistance Sheet with common prompt presets in English, Tamil, and Hindi for zero-typing accessibility.
+  - Deployed on **Skill Builder description**, **SeniorBot chat input**, **Business Guidance concept & location**, and **Marketplace service search**.
 
 ---
 
-## 2. Core AI Agents (Verified Dynamic Gemini Execution)
+## 2. Shared Core AI Agents (Real Google GenAI Execution)
 1. **Skill & Profile AI Agent (`/api/v1/ai/extract-skills`):**
    - Parses plain natural language or voice spoken by senior citizens to extract structured skills, fair ₹ INR pricing, and authentic biography copy.
 2. **AI Profile Builder Agent (`/api/v1/ai/profile-builder`):**
@@ -52,20 +45,40 @@ SilverHands is an AI-powered, senior-friendly livelihood platform connecting ski
 
 ---
 
-## 3. Verified End-to-End Spine Lifecycle
-The complete platform lifecycle has been exercised and verified:
-$$\text{Signup} \to \text{Profile} \to \text{AI Skill ID} \to \text{AI Profile Builder} \to \text{Publish Service} \to \text{Marketplace} \to \text{Smart Match} \to \text{Booking} \to \text{Accept} \to \text{Complete} \to \text{Review} \to \text{Trust Score} \to \text{Opportunities Feed} \to \text{Express Interest}$$
+## 3. How to Run Backend + Web + Mobile Together
+
+### 1. Start FastAPI Backend:
+```bash
+cd backend
+.\venv\Scripts\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000
+```
+- API Health: `http://localhost:8000/api/v1/health`
+- Swagger Docs: `http://localhost:8000/docs`
+
+### 2. Start Web Frontend:
+```bash
+cd frontend
+npm run dev -- --port 5173
+```
+- Web Application: `http://localhost:5173`
+
+### 3. Start Mobile App (Expo SDK 54):
+```bash
+cd mobile
+npx expo start -c
+# or run in web / android emulator:
+npm run web
+npm run android
+```
 
 ---
 
-## 4. Change Log
-- **v3.2.0 (2026-08-15):** Hexaware-Inspired Enterprise Visual Design + Opportunities View:
-  - **Color & Design System:** Alternating deep navy (`#0A0F24` / `#0D1127`) and light neutral canvas (`#F7F9FC`, `#FFFFFF`), indigo primary CTAs (`#4B32E6`), cyan accents (`#4099FF`), and clean card hover lift.
-  - **Landing Hero & Flow:** Hero banner with real live DB numbers, 4-step "How It Works" lifecycle, and enterprise AI architecture 5-agent showcase.
-  - **5-Factor Smart Matching Bars:** Visual animated percentage progress bars for Skill (40%), Distance (25%), Rating (15%), Experience (10%), and Reliability (10%).
-  - **Dedicated Opportunities View:** Dedicated top nav tab for neighborhood demand with match %, distance, budget, and Express Interest $\to$ "Interest Sent ✓".
-  - **Senior-Friendly Accessibility:** High Contrast mode retaining enterprise hierarchy, 3-tier font scaler (16px, 19px, 22px), reduced-motion support, and full 3-language translations (EN, TA, HI).
-  - **All 14/14 Automated API Tests Passed:** Zero errors across backend test suite and clean production frontend bundle (`npm run build`).
+## 4. Verification & Change Log
+- **v4.3.0 (2026-08-15):** Voice Assistance (expo-speech TTS + VoiceInput STT) across Skill Builder, Mentor Bot, Business Guidance & Marketplace Search.
+- **v4.2.0 (2026-08-15):** Status Bar Overlap Fix + Navigation / Back Button Polish + SafeArea Insets.
+- **v4.1.0 (2026-08-15):** Expo SDK 54 Dependency Fix + Navigation UX & Mobile LAN IP Connectivity.
+- **v4.0.0 (2026-08-15):** Mobile App (React Native + Expo + TypeScript) Initial Release.
+- **v3.2.0 (2026-08-15):** Hexaware-Inspired Enterprise Visual Design + Opportunities View.
 - **v3.1.0 (2026-08-15):** Bug Fixes + Balanced UI + Multilingual + Real Gemini + Express Interest.
 - **v3.0.0 (2026-08-15):** Full Lifecycle + Opportunity Engine + Navy Corporate UI.
 - **v1.1.0 (2026-08-14):** Major Functionality & Gemini Integration Update.
