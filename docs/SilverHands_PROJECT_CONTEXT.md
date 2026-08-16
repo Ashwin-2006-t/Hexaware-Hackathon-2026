@@ -1,8 +1,8 @@
 # SilverHands Project Context & Source of Truth
 
 **Tagline:** "Turning Lifelong Skills Into New Opportunities."  
-**Current Version:** v4.3.0 (Mobile App Voice Assistance & Audio Playback + Expo SDK 54 Native Integration)  
-**Status:** Complete, India-Ready & Fully Verified Across Web & Mobile
+**Current Version:** v6.0.0 (Opportunity Engine + Skill Passport + Media Upload + Supabase Completion)  
+**Status:** Complete, India-Ready & Fully Verified Across Backend, Web & Mobile
 
 ---
 
@@ -11,46 +11,53 @@ SilverHands is an AI-powered livelihood platform connecting skilled Indian senio
 
 ```
 Hexaware-Hackathon-2026/
-├── backend/     ← FastAPI, SQLAlchemy, SQLite/PostgreSQL, Real Google GenAI SDK (Port 8000)
-├── frontend/    ← React 19, TypeScript, Vite Web Client with Web Speech STT/TTS (Port 5173)
-├── mobile/      ← React Native 0.81.5, Expo SDK 54, expo-speech TTS & VoiceInput Assistance (Port 8081 / Expo Go)
-└── docs/        ← SilverHands_PROJECT_CONTEXT.md (v4.3.0 Source of Truth)
+├── backend/     ← FastAPI, SQLAlchemy, Supabase / PostgreSQL & SQLite, Active Gemini Models (Port 8000)
+├── frontend/    ← React 19, TypeScript, Vite Web Client with Skill Passport & Opportunity Engine (Port 5173)
+├── mobile/      ← React Native 0.81.5, Expo SDK 54, expo-speech TTS & Voice Assistance (Port 8081 / Expo Go)
+├── docs/        ← SilverHands_PROJECT_CONTEXT.md (v6.0 Source of Truth)
+└── RUN_GUIDE.md ← Comprehensive multi-tier run instructions
 ```
 
-### 1.1 Mobile Voice Assistance (v4.3.0)
-- **Text-to-Speech (TTS) Engine:**
-  - Integrated `expo-speech` with multilingual voice playback in **Indian English (`en-IN`)**, **Tamil (`ta-IN`)**, and **Hindi (`hi-IN`)** at senior-friendly pacing (rate: `0.92`).
-  - **SilverBot Voice Playback:** Listen button (`🔊 Listen` / `⏹️ Stop`) on all AI mentor answers in `AssistantScreen.tsx`.
-  - **Bio & Advice Voice Playback:** Senior biography and AI mentor advice audio playback in `SkillBuilderScreen.tsx`.
-- **Speech-to-Text (STT) & Voice Input Assistance (`VoiceInputButton`):**
-  - Web & Browser Speech Recognition for live microphone dictation.
-  - Senior-friendly Voice Assistance Sheet with common prompt presets in English, Tamil, and Hindi for zero-typing accessibility.
-  - Deployed on **Skill Builder description**, **SeniorBot chat input**, **Business Guidance concept & location**, and **Marketplace service search**.
+---
+
+## 2. Core v6.0 Capabilities
+
+### 2.1 Deterministic Opportunity Engine & Local Demand Radar
+- **Deterministic 6-Factor Scoring Formula:**
+  $$\text{Score} = \text{Skill (40\%)} + \text{Location Distance (20\%)} + \text{Local Demand (15\%)} + \text{Availability (10\%)} + \text{Experience (10\%)} + \text{Trust (5\%)}$$
+- **Checklist Reasons:** Every match displays transparent, human-verifiable reasons (`✓ Strong Crafts Match`, `✓ In Service Area`, `✓ High Neighborhood Demand`, `✓ 40+ Years Experience`, `✓ Platform Verified`).
+- **Gemini Guardrail:** Gemini provides plain-language explainers grounded strictly in backend facts; it never invents or calculates scores.
+- **Local Demand Radar:** Endpoint (`/api/v1/opportunities/demand-radar`) and UI displaying neighborhood demand levels (High / Medium), active request volume, average ₹ INR pricing, top requested skills, and growth trends across Indian cities.
+- **Express Interest Full Lifecycle:** Provider expresses interest → Duplicate submissions are blocked (HTTP 400) → Button transitions to disabled "✓ Interest Sent" → Opportunity owner views interested providers (`/api/v1/opportunities/{opp_id}/interests`) → Opportunity owner accepts provider (`/api/v1/opportunities/{opp_id}/interests/{interest_id}/accept`) → Confirmed Booking is created.
+
+### 2.2 Senior Skill Passport
+- **Platform Verified Facts vs Claimed Experience:**
+  - Distinctly surfaces verified completed service count, verified customer rating (5.0★), verified reviews count, work sample count, and intro video presence alongside self-claimed experience years.
+  - Endpoints: `GET /api/v1/providers/{provider_id}/skill-passport`.
+
+### 2.3 Opportunity Improvement Engine ("Improve My Opportunities")
+- Dynamic profile readiness percentage calculation based on concrete milestones (Avatar Photo, Skills & Pricing, Neighborhood Location, Availability Hours, Work Samples Showcase, Intro Video Clip, Identity & Trust Badge).
+- Actionable buttons dynamically recalculate readiness score upon completion.
+- Endpoint: `GET /api/v1/providers/{provider_id}/readiness`.
+
+### 2.4 Media Upload System (Photo + Video + Work Samples)
+- **Profile Photo / Avatar:** Click-to-upload, validated formats (JPEG, PNG, WEBP <=5MB), stored in `/uploads/avatars/`, cache-busted with `?t=...`, and removable.
+- **Video Intro / Work Demo Clips:** File validation (MP4, WebM, MOV <=50MB), stored in `/uploads/videos/`, embedded player with controls, and removable.
+- **Work Samples Showcase:** Photo showcase gallery with image, title, category, description, and delete button.
+
+### 2.5 Active Google GenAI SDK Models
+- Configured for 2026 active model catalog (`gemini-3.5-flash`, `gemini-3.1-flash-lite`, `gemini-flash-latest`).
 
 ---
 
-## 2. Shared Core AI Agents (Real Google GenAI Execution)
-1. **Skill & Profile AI Agent (`/api/v1/ai/extract-skills`):**
-   - Parses plain natural language or voice spoken by senior citizens to extract structured skills, fair ₹ INR pricing, and authentic biography copy.
-2. **AI Profile Builder Agent (`/api/v1/ai/profile-builder`):**
-   - Generates warm headline and structured bio with `"AI-assisted — please verify before publishing"` verification notice.
-3. **Deterministic 5-Factor Smart Matching Engine & AI Explainer (`/api/v1/ai/smart-match`):**
-   - Deterministic 5-factor scoring engine (Skill 40%, Distance 25%, Rating 15%, Experience 10%, Reliability 10%) with animated percentage progress bars.
-   - Generates transparent match reason tags (e.g. `✓ Nearby (0.8 km away)`, `✓ 15+ Years Experience`, `✓ Top Rated (5.0★)`, `✓ 8 Services Completed`, `✓ Identity Verified`).
-   - Gemini AI produces a concise 2-sentence rationale explaining the recommendation.
-4. **Senior Assistant / Business Mentor Agent (`/api/v1/ai/assistant`):**
-   - 'SilverBot' answers questions about micro-business startup (tiffin, pickles, tailoring), pricing in ₹ INR, customer safety guidelines, and audio playback in English, Tamil, and Hindi.
-5. **Micro-Business Guidance Agent (`/api/v1/ai/business-guidance`):**
-   - Actionable 5-part plan for informal home services in India (concept, customers, pricing in ₹ INR, zero-cost marketing, first 3 steps, packaging & hygiene). Labeled `"AI-generated guidance — please verify before acting"`.
+## 3. How to Run Backend + Web + Mobile
 
----
-
-## 3. How to Run Backend + Web + Mobile Together
+Please refer to [`RUN_GUIDE.md`](file:///d:/ASHWIN/Ashwin%20Programing/Hexaware%20Hackathon%282026%29/Hexaware-Hackathon-2026/RUN_GUIDE.md) for full step-by-step startup instructions.
 
 ### 1. Start FastAPI Backend:
 ```bash
 cd backend
-.\venv\Scripts\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000
+.\venv\Scripts\python.exe -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 - API Health: `http://localhost:8000/api/v1/health`
 - Swagger Docs: `http://localhost:8000/docs`
@@ -58,28 +65,12 @@ cd backend
 ### 2. Start Web Frontend:
 ```bash
 cd frontend
-npm run dev -- --port 5173
+npm run dev
 ```
 - Web Application: `http://localhost:5173`
 
-### 3. Start Mobile App (Expo SDK 54):
+### 3. Start Mobile App:
 ```bash
 cd mobile
-npx expo start -c
-# or run in web / android emulator:
-npm run web
-npm run android
+npm start
 ```
-
----
-
-## 4. Verification & Change Log
-- **v4.3.0 (2026-08-15):** Voice Assistance (expo-speech TTS + VoiceInput STT) across Skill Builder, Mentor Bot, Business Guidance & Marketplace Search.
-- **v4.2.0 (2026-08-15):** Status Bar Overlap Fix + Navigation / Back Button Polish + SafeArea Insets.
-- **v4.1.0 (2026-08-15):** Expo SDK 54 Dependency Fix + Navigation UX & Mobile LAN IP Connectivity.
-- **v4.0.0 (2026-08-15):** Mobile App (React Native + Expo + TypeScript) Initial Release.
-- **v3.2.0 (2026-08-15):** Hexaware-Inspired Enterprise Visual Design + Opportunities View.
-- **v3.1.0 (2026-08-15):** Bug Fixes + Balanced UI + Multilingual + Real Gemini + Express Interest.
-- **v3.0.0 (2026-08-15):** Full Lifecycle + Opportunity Engine + Navy Corporate UI.
-- **v1.1.0 (2026-08-14):** Major Functionality & Gemini Integration Update.
-- **v1.0.0 (2026-08-14):** Initial SilverHands platform release.

@@ -3,7 +3,7 @@ import {
   Search, MapPin, Star, ShieldCheck, Clock,
   ChefHat, GraduationCap, Scissors, Sprout, Wrench, Calendar,
   CheckCircle2, AlertCircle, X, Sparkles, Map as MapIcon,
-  SlidersHorizontal, UserCheck
+  SlidersHorizontal, UserCheck, Video, Play
 } from 'lucide-react'
 import type { ServiceListing, User } from '../types'
 import { api } from '../services/api'
@@ -34,6 +34,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
   const [selectedService, setSelectedService] = useState<ServiceListing | null>(null)
   const [showMap, setShowMap] = useState<boolean>(false)
   const [showFilters, setShowFilters] = useState<boolean>(false)
+  const [watchingVideo, setWatchingVideo] = useState<{ url: string; title: string; provider: string } | null>(null)
 
   // Booking Modal State
   const [bookingDate, setBookingDate] = useState<string>('2026-08-25')
@@ -346,6 +347,24 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
                       <span>{service.completed_services || 12} {t.completedJobs}</span>
                     </span>
                   </div>
+
+                  {/* Intro Video Watch Button */}
+                  {service.provider_video_url && (
+                    <div className="pt-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setWatchingVideo({
+                          url: service.provider_video_url!,
+                          title: service.title,
+                          provider: service.provider_name || 'Senior Provider'
+                        })}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold hover:bg-indigo-100 transition-colors cursor-pointer"
+                      >
+                        <Play className="w-3.5 h-3.5 fill-indigo-600 text-indigo-600" />
+                        <span>▶ Watch Senior Intro Video</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -393,10 +412,24 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
                   (e.target as HTMLImageElement).src = defaultAvatar
                 }}
               />
-              <div>
+              <div className="flex-1">
                 <h3 className="text-lg font-bold">{selectedService.title}</h3>
                 <p className="text-xs text-slate-500">With {selectedService.provider_name}</p>
               </div>
+              {selectedService.provider_video_url && (
+                <button
+                  type="button"
+                  onClick={() => setWatchingVideo({
+                    url: selectedService.provider_video_url!,
+                    title: selectedService.title,
+                    provider: selectedService.provider_name || 'Senior Provider'
+                  })}
+                  className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                >
+                  <Play className="w-3 h-3 fill-indigo-600 text-indigo-600" />
+                  <span>Intro Video</span>
+                </button>
+              )}
             </div>
 
             {bookingMessage && (
@@ -461,6 +494,49 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
                 className="btn-large w-1/2 btn-indigo text-xs py-2 font-semibold shadow-sm"
               >
                 {bookingSubmitting ? 'Sending Request...' : 'Confirm Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Video Player Modal for Customers & Viewers */}
+      {watchingVideo && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="max-w-xl w-full p-5 rounded-2xl relative border shadow-2xl bg-white text-slate-900 border-slate-200">
+            <button
+              onClick={() => setWatchingVideo(null)}
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-700 p-1.5 rounded-full bg-slate-100 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-2 mb-3">
+              <Video className="w-5 h-5 text-indigo-600" />
+              <div>
+                <h3 className="text-base font-bold text-slate-900">{watchingVideo.provider} — Intro Video</h3>
+                <p className="text-xs text-slate-500">{watchingVideo.title}</p>
+              </div>
+            </div>
+
+            <div className="rounded-xl overflow-hidden bg-black aspect-video flex items-center justify-center">
+              <video
+                src={watchingVideo.url}
+                controls
+                autoPlay
+                className="w-full h-full object-contain"
+              >
+                Your browser does not support the video tag.
+              </video>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+              <span>Verified Community Introduction Clip</span>
+              <button
+                onClick={() => setWatchingVideo(null)}
+                className="btn-large px-4 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold"
+              >
+                Close Video
               </button>
             </div>
           </div>

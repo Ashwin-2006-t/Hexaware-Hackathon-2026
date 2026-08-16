@@ -8,6 +8,9 @@ export interface User {
   phone?: string
   bio?: string
   avatar_url?: string
+  video_intro_url?: string
+  work_samples_count?: number
+  readiness_score?: number
   location_name?: string
   latitude?: number
   longitude?: number
@@ -57,6 +60,7 @@ export interface ServiceListing {
   completed_services?: number
   verified_badge?: boolean
   years_experience?: number
+  provider_video_url?: string
 }
 
 export interface Booking {
@@ -201,3 +205,95 @@ export interface AssistantChatResponse {
   reply: string
   suggested_actions: string[]
 }
+
+export interface SkillPassportItem {
+  skill_id: number
+  skill_title: string
+  category: string
+  claimed_experience_years: number
+  completed_services_count: number
+  verified_rating: number
+  verified_reviews_count: number
+  work_samples_count: number
+  has_video_demo: boolean
+  verification_status: string
+  hourly_rate: number
+  platform_verified: boolean
+}
+
+export interface SkillPassportResponse {
+  provider_id: number
+  provider_name: string
+  avatar_url?: string
+  trust_badge_level: string
+  total_completed_services: number
+  overall_rating: number
+  total_reviews_count: number
+  video_intro_url?: string
+  skills: SkillPassportItem[]
+  member_since: string
+  passport_summary: string
+}
+
+export interface ReadinessChecklistItem {
+  id: string
+  title: string
+  description: string
+  completed: boolean
+  points: number
+  action_label: string
+  action_key: string
+}
+
+export interface ReadinessResponse {
+  provider_id: number
+  readiness_percentage: number
+  completed_count: number
+  total_count: number
+  checklist: ReadinessChecklistItem[]
+  improvement_advice: string
+  disclaimer: string
+}
+
+export interface DemandRadarItem {
+  category: string
+  location: string
+  demand_level: string
+  active_requests_count: number
+  average_hourly_rate: number
+  top_requested_skills: string[]
+  growth_trend: string
+  is_remote_friendly: boolean
+  is_live_data: boolean
+}
+
+export interface DemandRadarResponse {
+  location_query?: string
+  category_query?: string
+  total_categories: number
+  high_demand_count: number
+  radar_items: DemandRadarItem[]
+  demo_notice: string
+}
+
+export interface WorkSample {
+  id: number
+  user_id: number
+  title: string
+  category: string
+  image_url: string
+  description?: string
+  created_at: string
+}
+
+export interface ProfileMedia {
+  id: number
+  user_id: number
+  media_type: 'photo' | 'video_intro' | 'work_demo'
+  url: string
+  title?: string
+  duration_seconds?: number
+  file_size_bytes?: number
+  created_at: string
+}
+

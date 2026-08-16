@@ -25,6 +25,9 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     completed_services_count = Column(Integer, default=0)
     trust_badge_level = Column(String, default="verified_senior")  # 'verified_senior', 'community_star', 'master_craftsman'
+    video_intro_url = Column(String, nullable=True)
+    work_samples_count = Column(Integer, default=0)
+    readiness_score = Column(Integer, default=70)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     skills = relationship("Skill", back_populates="user", cascade="all, delete-orphan")
@@ -34,6 +37,8 @@ class User(Base):
     reviews_given = relationship("Review", foreign_keys="[Review.customer_id]", back_populates="customer")
     reviews_received = relationship("Review", foreign_keys="[Review.provider_id]", back_populates="provider")
     opportunity_interests = relationship("OpportunityInterest", back_populates="provider", cascade="all, delete-orphan")
+    work_samples = relationship("WorkSample", back_populates="user", cascade="all, delete-orphan")
+    profile_media = relationship("ProfileMedia", back_populates="user", cascade="all, delete-orphan")
 
 
 class Skill(Base):
@@ -120,3 +125,48 @@ class OpportunityInterest(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     provider = relationship("User", back_populates="opportunity_interests")
+
+
+class WorkSample(Base):
+    __tablename__ = "work_samples"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    title = Column(String, nullable=False)
+    category = Column(String, nullable=False)
+    image_url = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User", back_populates="work_samples")
+
+
+class ProfileMedia(Base):
+    __tablename__ = "profile_media"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    media_type = Column(String, default="photo")  # 'photo', 'video_intro', 'work_demo'
+    url = Column(String, nullable=False)
+    title = Column(String, nullable=True)
+    duration_seconds = Column(Integer, nullable=True)
+    file_size_bytes = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User", back_populates="profile_media")
+
+
+class Opportunity(Base):
+    __tablename__ = "opportunities"
+
+    id = Column(String, primary_key=True, index=True)
+    customer_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    title = Column(String, nullable=False)
+    category = Column(String, nullable=False)
+    customer_location = Column(String, nullable=False)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    budget_range = Column(String, nullable=False)  # in ₹ INR
+    description = Column(Text, nullable=False)
+    status = Column(String, default="open")  # 'open', 'accepted', 'completed', 'cancelled'
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)

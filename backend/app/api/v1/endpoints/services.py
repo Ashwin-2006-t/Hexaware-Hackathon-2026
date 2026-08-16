@@ -74,7 +74,8 @@ def list_services(
             total_reviews=len(reviews),
             completed_services=provider.completed_services_count if provider else 12,
             verified_badge=True,
-            years_experience=years_exp
+            years_experience=years_exp,
+            provider_video_url=provider.video_intro_url if provider else None
         ))
         
     return results
@@ -128,7 +129,8 @@ def create_service(service_in: ServiceCreate, provider_id: int = Query(1), db: S
         total_reviews=1,
         completed_services=provider.completed_services_count or 1,
         verified_badge=True,
-        years_experience=20
+        years_experience=20,
+        provider_video_url=provider.video_intro_url
     )
 
 
@@ -167,7 +169,8 @@ def get_service_detail(service_id: int, db: Session = Depends(get_db)):
         total_reviews=len(reviews),
         completed_services=provider.completed_services_count if provider else 12,
         verified_badge=True,
-        years_experience=20
+        years_experience=20,
+        provider_video_url=provider.video_intro_url if provider else None
     )
 
 
@@ -223,7 +226,8 @@ def update_service(service_id: int, service_in: ServiceUpdate, db: Session = Dep
         total_reviews=1,
         completed_services=10,
         verified_badge=True,
-        years_experience=20
+        years_experience=20,
+        provider_video_url=provider.video_intro_url if provider else None
     )
 
 

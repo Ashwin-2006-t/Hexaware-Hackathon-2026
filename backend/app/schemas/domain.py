@@ -47,6 +47,7 @@ class UserResponse(UserBase):
     trust_badge_level: Optional[str] = "verified_senior"
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    video_intro_url: Optional[str] = None
     created_at: str
 
     class Config:
@@ -125,6 +126,7 @@ class ServiceResponse(ServiceBase):
     completed_services: Optional[int] = 15
     verified_badge: Optional[bool] = True
     years_experience: Optional[int] = 20
+    provider_video_url: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -303,3 +305,141 @@ class AssistantChatResponse(BaseModel):
     ai_message: Optional[str] = None
     reply: str
     suggested_actions: List[str]
+
+
+# --- Work Samples & Media Schemas ---
+class WorkSampleCreate(BaseModel):
+    title: str
+    category: str
+    image_url: str
+    description: Optional[str] = None
+
+class WorkSampleResponse(BaseModel):
+    id: int
+    user_id: int
+    title: str
+    category: str
+    image_url: str
+    description: Optional[str] = None
+    created_at: str
+
+    class Config:
+        from_attributes = True
+
+class ProfileMediaCreate(BaseModel):
+    media_type: str = "photo"  # 'photo', 'video_intro', 'work_demo'
+    url: str
+    title: Optional[str] = None
+    duration_seconds: Optional[int] = None
+    file_size_bytes: Optional[int] = None
+
+class ProfileMediaResponse(BaseModel):
+    id: int
+    user_id: int
+    media_type: str
+    url: str
+    title: Optional[str] = None
+    duration_seconds: Optional[int] = None
+    file_size_bytes: Optional[int] = None
+    created_at: str
+
+    class Config:
+        from_attributes = True
+
+
+# --- Skill Passport Schemas ---
+class SkillPassportItem(BaseModel):
+    skill_id: int
+    skill_title: str
+    category: str
+    claimed_experience_years: int
+    completed_services_count: int
+    verified_rating: float
+    verified_reviews_count: int
+    work_samples_count: int
+    has_video_demo: bool
+    verification_status: str  # 'verified_senior', 'community_star', 'unverified'
+    hourly_rate: float
+    platform_verified: bool
+
+class SkillPassportResponse(BaseModel):
+    provider_id: int
+    provider_name: str
+    avatar_url: Optional[str] = None
+    trust_badge_level: str
+    total_completed_services: int
+    overall_rating: float
+    total_reviews_count: int
+    video_intro_url: Optional[str] = None
+    skills: List[SkillPassportItem]
+    member_since: str
+    passport_summary: str
+
+
+# --- Opportunity Readiness / Improvement Engine Schemas ---
+class ReadinessChecklistItem(BaseModel):
+    id: str
+    title: str
+    description: str
+    completed: bool
+    points: int
+    action_label: str
+    action_key: str
+
+class ReadinessResponse(BaseModel):
+    provider_id: int
+    readiness_percentage: int
+    completed_count: int
+    total_count: int
+    checklist: List[ReadinessChecklistItem]
+    improvement_advice: str
+    disclaimer: str = "Completing recommendations may improve match relevance. SilverHands does not guarantee specific revenue."
+
+
+# --- Local Demand Radar Schemas ---
+class DemandRadarItem(BaseModel):
+    category: str
+    location: str
+    demand_level: str  # 'High', 'Medium', 'Emerging'
+    active_requests_count: int
+    average_hourly_rate: float  # in ₹ INR
+    top_requested_skills: List[str]
+    growth_trend: str  # '+15% this week'
+    is_remote_friendly: bool
+    is_live_data: bool = True
+
+class DemandRadarResponse(BaseModel):
+    location_query: Optional[str] = None
+    category_query: Optional[str] = None
+    total_categories: int
+    high_demand_count: int
+    radar_items: List[DemandRadarItem]
+    demo_notice: str = "Local Demand Radar aggregates verified neighborhood inquiries and local search trends across Indian cities."
+
+
+# --- Opportunity Management Schemas ---
+class OpportunityCreate(BaseModel):
+    title: str
+    category: str
+    customer_location: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    budget_range: str
+    description: str
+
+class OpportunityDetailResponse(BaseModel):
+    id: str
+    customer_id: Optional[int] = None
+    title: str
+    category: str
+    customer_location: str
+    budget_range: str
+    description: str
+    status: str
+    created_at: str
+    interested_providers_count: int = 0
+    is_applied: bool = False
+    match_score: Optional[float] = None
+    match_reasons: Optional[List[str]] = None
+    explanation: Optional[str] = None
+

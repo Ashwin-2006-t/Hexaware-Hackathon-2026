@@ -30,8 +30,15 @@ import time
 
 def get_candidate_models() -> List[str]:
     """Returns prioritized candidate models for dynamic AI generations."""
-    primary = (settings.GEMINI_MODEL or "").strip() or "gemini-flash-latest"
-    candidates = [primary, "gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite"]
+    primary = (settings.GEMINI_MODEL or "").strip() or "gemini-3.5-flash"
+    candidates = [
+        primary,
+        "gemini-3.5-flash",
+        "gemini-3.1-flash-lite",
+        "gemini-flash-lite-latest",
+        "gemini-flash-latest",
+        "gemini-3.7-flash"
+    ]
     # De-duplicate while preserving order
     seen = set()
     return [m for m in candidates if not (m in seen or seen.add(m))]
@@ -416,3 +423,80 @@ Write exactly 2 warm, honest, concise sentences explaining why this senior provi
             logger.warning(f"Gemini API call failed for match explanation: {e}")
 
     return f"{provider_name} brings over {years_experience} years of authentic expertise in {category.lower()} and is located just {distance_km} km away with an outstanding {rating}★ rating."
+
+
+def autofill_from_video_description(
+    video_description: str,
+    user_name: Optional[str] = None,
+    location: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    AI Autofill from Video Description/Transcript:
+    Takes a text description of a video (or transcript) and generates suggested
+    profile content — bio, skills, experience — by reusing the skill extraction pipeline.
+    Returns editable suggestions, clearly marked as AI-assisted.
+    
+    Guardrails: Only reflects what's actually described, no invented credentials.
+    """
+    client = get_genai_client()
+    if client:
+        try:
+            prompt = f"""You are the SilverHands AI Assistant for senior citizens and homemakers in India.
+A senior has uploaded a video introducing themselves. Here is a description or transcript of what they said:
+
+---
+"{video_description}"
+---
+
+{f'Their name is: {user_name}' if user_name else ''}
+{f'Their location is: {location}' if location else ''}
+
+Based ONLY on what was actually said in the video/description above, generate suggested profile content.
+
+CRITICAL RULES:
+- Ground ALL information ONLY in what was described. Do NOT invent certifications, degrees, or false claims.
+- Price suggestions must be realistic in Indian Rupees (₹ INR), typically ₹250 - ₹600/hr.
+- If the description is too vague or short, say so honestly — do not fabricate details.
+
+Return VALID JSON ONLY with this exact schema:
+{{
+  "suggested_bio": "A warm, honest 2-3 sentence bio based only on what was described",
+  "suggested_skills": [
+    {{
+      "title": "Skill title extracted from the video",
+      "category": "Cooking & Tiffin|Tutoring & Mentoring|Crafts & Tailoring|Gardening & Agriculture|Consulting & Life Mentoring|Home Maintenance",
+      "proficiency_level": "Expert|Master",
+      "years_experience": number_or_null,
+      "suggested_hourly_rate": number,
+      "key_highlights": ["Highlight 1", "Highlight 2"]
+    }}
+  ],
+  "suggested_description": "A longer 3-4 sentence description for their service listing",
+  "confidence_note": "What was clear vs uncertain from the video description",
+  "ai_mentor_tip": "Encouraging tip for the senior about their profile"
+}}"""
+            text = call_gemini_with_fallback(client, prompt)
+            if text:
+                clean_json = text.replace("```json", "").replace("```", "").strip()
+                parsed = json.loads(clean_json)
+                parsed["success"] = True
+                parsed["ai_available"] = True
+                parsed["is_ai_assisted"] = True
+                parsed["notice"] = "AI-assisted suggestions from your video — please review and edit before publishing"
+                return parsed
+        except Exception as e:
+            logger.warning(f"Gemini API call failed for video autofill: {e}")
+
+    # Deterministic fallback — use the existing skill extraction pipeline
+    skill_result = extract_skills_from_text(video_description)
+    return {
+        "success": True,
+        "ai_available": False,
+        "is_ai_assisted": True,
+        "notice": "AI-assisted suggestions — please review and edit before publishing",
+        "suggested_bio": skill_result.get("generated_profile_bio", ""),
+        "suggested_skills": skill_result.get("skills", []),
+        "suggested_description": skill_result.get("generated_profile_bio", ""),
+        "confidence_note": "Generated from keyword analysis of your video description.",
+        "ai_mentor_tip": skill_result.get("ai_mentor_tip", "")
+    }

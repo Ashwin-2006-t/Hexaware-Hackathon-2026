@@ -1,4 +1,5 @@
 import re
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -9,6 +10,8 @@ from app.models.domain import User
 from app.schemas.domain import UserCreate, UserLogin, UserResponse, TokenResponse
 from app.core.security import get_password_hash, verify_password, create_access_token
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -88,10 +91,16 @@ def signup(user_in: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse, summary="Log in with email & password")
 def login(login_in: UserLogin, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == login_in.email.strip().lower()).first()
-    if not user or not verify_password(login_in.password, user.hashed_password):
+    email_clean = login_in.email.strip().lower()
+    user = db.query(User).filter(User.email == email_clean).first()
+    if not user:
+        logger.warning(f"Login failed: User with email '{email_clean}' not found.")
+        raise HTTPException(status_code=401, detail="Invalid email or password. Please check your credentials.")
+    if not verify_password(login_in.password, user.hashed_password):
+        logger.warning(f"Login failed: Password mismatch for user '{email_clean}'.")
         raise HTTPException(status_code=401, detail="Invalid email or password. Please check your credentials.")
 
+    logger.info(f"Login successful: User ID {user.id} ({email_clean}) authenticated.")
     token = create_access_token(user.id)
     
     user_resp = UserResponse(

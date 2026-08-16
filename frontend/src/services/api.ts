@@ -214,16 +214,122 @@ export const api = {
     return res.json()
   },
 
-  async getProviderOpportunities(providerId: number = 1): Promise<OpportunityFeedResponse> {
-    const res = await fetch(`${API_BASE}/providers/${providerId}/opportunities`, {
+  async removeAvatar(providerId: number): Promise<{ status: string; message: string }> {
+    const res = await fetch(`${API_BASE}/providers/${providerId}/avatar`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) throw new Error('Failed to remove avatar')
+    return res.json()
+  },
+
+  async uploadVideo(file: File, userId: number = 1, title: string = 'Senior Intro Clip'): Promise<{ status: string; video_url: string; message: string }> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const token = localStorage.getItem('silverhands_token')
+    const headers: Record<string, string> = {}
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    const res = await fetch(`${API_BASE}/providers/upload-video?user_id=${userId}&title=${encodeURIComponent(title)}`, {
+      method: 'POST',
+      headers,
+      body: formData
+    })
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'Failed to upload video')
+    }
+    return res.json()
+  },
+
+  async removeVideo(providerId: number): Promise<{ status: string; message: string }> {
+    const res = await fetch(`${API_BASE}/providers/${providerId}/video`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) throw new Error('Failed to remove video')
+    return res.json()
+  },
+
+  async getSkillPassport(providerId: number = 1): Promise<any> {
+    const res = await fetch(`${API_BASE}/providers/${providerId}/skill-passport`, {
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) throw new Error('Failed to fetch skill passport')
+    return res.json()
+  },
+
+  async getReadiness(providerId: number = 1): Promise<any> {
+    const res = await fetch(`${API_BASE}/providers/${providerId}/readiness`, {
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) throw new Error('Failed to fetch readiness score')
+    return res.json()
+  },
+
+  async getDemandRadar(location?: string, category?: string, demandLevel?: string): Promise<any> {
+    let url = `${API_BASE}/opportunities/demand-radar?`
+    if (location) url += `location=${encodeURIComponent(location)}&`
+    if (category) url += `category=${encodeURIComponent(category)}&`
+    if (demandLevel) url += `demand_level=${encodeURIComponent(demandLevel)}&`
+    const res = await fetch(url, { headers: getAuthHeaders() })
+    if (!res.ok) throw new Error('Failed to fetch demand radar')
+    return res.json()
+  },
+
+  async getWorkSamples(providerId: number = 1): Promise<any[]> {
+    const res = await fetch(`${API_BASE}/providers/${providerId}/work-samples`, {
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) throw new Error('Failed to fetch work samples')
+    return res.json()
+  },
+
+  async addWorkSample(providerId: number, data: { title: string; category: string; image_url: string; description?: string }): Promise<any> {
+    const res = await fetch(`${API_BASE}/providers/${providerId}/work-samples`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    })
+    if (!res.ok) throw new Error('Failed to add work sample')
+    return res.json()
+  },
+
+  async deleteWorkSample(providerId: number, sampleId: number): Promise<{ status: string }> {
+    const res = await fetch(`${API_BASE}/providers/${providerId}/work-samples/${sampleId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) throw new Error('Failed to delete work sample')
+    return res.json()
+  },
+
+  async getProviderOpportunities(providerId: number = 1, category?: string): Promise<OpportunityFeedResponse> {
+    let url = `${API_BASE}/opportunities/feed?provider_id=${providerId}`
+    if (category && category !== 'All') {
+      url += `&category=${encodeURIComponent(category)}`
+    }
+    const res = await fetch(url, {
       headers: getAuthHeaders()
     })
     if (!res.ok) throw new Error('Failed to fetch opportunities feed')
     return res.json()
   },
 
+  async getMyOpportunities(providerId: number = 1): Promise<any> {
+    const res = await fetch(`${API_BASE}/opportunities/provider/${providerId}/my-opportunities`, {
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) throw new Error('Failed to fetch tracked opportunities')
+    return res.json()
+  },
+
   async expressInterest(providerId: number, opportunityId: string): Promise<OpportunityInterestResponse> {
-    const res = await fetch(`${API_BASE}/providers/${providerId}/opportunities/${opportunityId}/interest`, {
+    const res = await fetch(`${API_BASE}/opportunities/${opportunityId}/interest?provider_id=${providerId}`, {
       method: 'POST',
       headers: getAuthHeaders()
     })
@@ -359,6 +465,40 @@ export const api = {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
       throw new Error(err.detail || 'Failed to submit review')
+    }
+    return res.json()
+  },
+
+  async autofillFromVideo(videoDescription: string, userName?: string, location?: string): Promise<{
+    success: boolean
+    ai_available: boolean
+    is_ai_assisted: boolean
+    notice: string
+    suggested_bio: string
+    suggested_skills: Array<{
+      title: string
+      category: string
+      proficiency_level: string
+      years_experience: number
+      suggested_hourly_rate: number
+      key_highlights: string[]
+    }>
+    suggested_description: string
+    confidence_note: string
+    ai_mentor_tip: string
+  }> {
+    const res = await fetch(`${API_BASE}/ai/autofill-from-video`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        video_description: videoDescription,
+        user_name: userName,
+        location: location
+      })
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'AI autofill failed')
     }
     return res.json()
   }

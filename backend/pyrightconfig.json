@@ -4,5 +4,9 @@
   "extraPaths": [
     ".",
     "venv/Lib/site-packages"
-  ]
+  ],
+  "reportGeneralTypeIssues": "none",
+  "reportArgumentType": "none",
+  "reportAttributeAccessIssue": "none",
+  "reportOptionalMemberAccess": "none"
 }

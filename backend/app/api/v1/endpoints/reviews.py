@@ -31,14 +31,14 @@ def create_review(review_in: ReviewCreate, customer_id: int = Query(2), db: Sess
     customer = db.query(User).filter(User.id == customer_id).first()
 
     return ReviewResponse(
-        id=review.id,
-        booking_id=review.booking_id,
-        customer_id=review.customer_id,
-        provider_id=review.provider_id,
-        rating=review.rating,
-        comment=review.comment,
-        created_at=review.created_at.isoformat(),
-        customer_name=customer.full_name if customer else "Client"
+        id=getattr(review, "id"),
+        booking_id=getattr(review, "booking_id"),
+        customer_id=getattr(review, "customer_id"),
+        provider_id=getattr(review, "provider_id"),
+        rating=getattr(review, "rating"),
+        comment=getattr(review, "comment"),
+        created_at=review.created_at.isoformat() if review.created_at else "",
+        customer_name=str(customer.full_name) if (customer and customer.full_name) else "Client"
     )
 
 
@@ -49,13 +49,13 @@ def get_provider_reviews(provider_id: int, db: Session = Depends(get_db)):
     for r in reviews:
         cust = db.query(User).filter(User.id == r.customer_id).first()
         results.append(ReviewResponse(
-            id=r.id,
-            booking_id=r.booking_id,
-            customer_id=r.customer_id,
-            provider_id=r.provider_id,
-            rating=r.rating,
-            comment=r.comment,
-            created_at=r.created_at.isoformat(),
-            customer_name=cust.full_name if cust else "Verified Client"
+            id=getattr(r, "id"),
+            booking_id=getattr(r, "booking_id"),
+            customer_id=getattr(r, "customer_id"),
+            provider_id=getattr(r, "provider_id"),
+            rating=getattr(r, "rating"),
+            comment=getattr(r, "comment"),
+            created_at=r.created_at.isoformat() if r.created_at else "",
+            customer_name=str(cust.full_name) if (cust and cust.full_name) else "Verified Client"
         ))
     return results

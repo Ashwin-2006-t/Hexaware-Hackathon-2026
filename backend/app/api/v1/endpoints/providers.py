@@ -1,14 +1,25 @@
 import os
 import uuid
+import logging
 import datetime
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session
-from app.db.session import get_db
-from app.models.domain import User, Skill, ServiceListing, Review, Booking, OpportunityInterest
+from app.db.session import get_db, UPLOADS_DIR
+from app.models.domain import (
+    User, Skill, ServiceListing, Review, Booking, OpportunityInterest,
+    WorkSample, ProfileMedia
+)
+from app.services.supabase_client import upload_to_storage
+
+logger = logging.getLogger(__name__)
 from app.schemas.domain import (
     UserResponse, UserUpdate, SkillResponse, SkillCreate,
-    OpportunityFeedResponse, OpportunityItem, OpportunityInterestResponse
+    OpportunityFeedResponse, OpportunityItem, OpportunityInterestResponse,
+    SkillPassportResponse, SkillPassportItem,
+    ReadinessResponse, ReadinessChecklistItem,
+    WorkSampleResponse, WorkSampleCreate,
+    ProfileMediaResponse, ProfileMediaCreate
 )
 
 router = APIRouter()
@@ -108,7 +119,8 @@ def get_provider_profile(provider_id: int, db: Session = Depends(get_db)):
             "rating": avg_rating,
             "total_reviews": len(reviews),
             "completed_services_count": provider.completed_services_count or bookings_count or len(reviews) or 6,
-            "trust_badge_level": provider.trust_badge_level or "verified_senior"
+            "trust_badge_level": provider.trust_badge_level or "verified_senior",
+            "video_intro_url": provider.video_intro_url
         },
         "skills": [
             {
@@ -397,6 +409,167 @@ def express_interest_in_opportunity(
     )
 
 
+@router.get("/{provider_id}/skill-passport", response_model=SkillPassportResponse, summary="Get Senior Skill Passport")
+def get_skill_passport(provider_id: int, db: Session = Depends(get_db)):
+    """
+    Skill Passport:
+    Provides structured, authentic skill credentials distinguishing user-claimed vs platform-verified facts.
+    """
+    provider = db.query(User).filter(User.id == provider_id).first()
+    if not provider:
+        raise HTTPException(status_code=404, detail="Provider not found")
+
+    skills = db.query(Skill).filter(Skill.user_id == provider.id).all()
+    reviews = db.query(Review).filter(Review.provider_id == provider.id).all()
+    work_samples = db.query(WorkSample).filter(WorkSample.user_id == provider.id).all()
+    completed_bookings = db.query(Booking).filter(Booking.provider_id == provider.id, Booking.status == "completed").count()
+
+    total_completed = max(provider.completed_services_count or 0, completed_bookings, len(reviews))
+    avg_rating = 5.0
+    if reviews:
+        avg_rating = round(sum(r.rating for r in reviews) / len(reviews), 1)
+
+    passport_items: List[SkillPassportItem] = []
+    for s in skills:
+        passport_items.append(SkillPassportItem(
+            skill_id=s.id,
+            skill_title=s.title,
+            category=s.category,
+            claimed_experience_years=s.years_experience or 10,
+            completed_services_count=total_completed,
+            verified_rating=avg_rating,
+            verified_reviews_count=len(reviews),
+            work_samples_count=len([ws for ws in work_samples if ws.category.lower() in s.category.lower()]),
+            has_video_demo=bool(provider.video_intro_url),
+            verification_status=provider.trust_badge_level or "verified_senior",
+            hourly_rate=s.hourly_rate or 350.0,
+            platform_verified=bool(s.verified)
+        ))
+
+    summary = (
+        f"{provider.full_name} is a verified senior practitioner on SilverHands with {len(skills)} registered skill areas, "
+        f"{total_completed} completed community services, and a verified {avg_rating}★ customer rating."
+    )
+
+    return SkillPassportResponse(
+        provider_id=provider.id,
+        provider_name=provider.full_name,
+        avatar_url=provider.avatar_url,
+        trust_badge_level=provider.trust_badge_level or "verified_senior",
+        total_completed_services=total_completed,
+        overall_rating=avg_rating,
+        total_reviews_count=len(reviews),
+        video_intro_url=provider.video_intro_url,
+        skills=passport_items,
+        member_since=provider.created_at.strftime("%B %Y") if provider.created_at else "August 2026",
+        passport_summary=summary
+    )
+
+
+@router.get("/{provider_id}/readiness", response_model=ReadinessResponse, summary="Opportunity Improvement Engine (Readiness %)")
+def get_provider_readiness(provider_id: int, db: Session = Depends(get_db)):
+    """
+    Opportunity Improvement Engine:
+    Recalculates profile readiness % with concrete, actionable steps and non-guarantee recommendations.
+    """
+    provider = db.query(User).filter(User.id == provider_id).first()
+    if not provider:
+        raise HTTPException(status_code=404, detail="Provider not found")
+
+    skills = db.query(Skill).filter(Skill.user_id == provider.id).all()
+    work_samples = db.query(WorkSample).filter(WorkSample.user_id == provider.id).all()
+
+    checklist = [
+        ReadinessChecklistItem(
+            id="photo",
+            title="Profile Photo / Avatar",
+            description="Clear, friendly profile photo helps local families identify you.",
+            completed=bool(provider.avatar_url and not provider.avatar_url.endswith("default.png")),
+            points=15,
+            action_label="Upload Photo",
+            action_key="upload_photo"
+        ),
+        ReadinessChecklistItem(
+            id="skills",
+            title="Registered Skills & Pricing",
+            description="List specific services with fair hourly rates in ₹ INR.",
+            completed=len(skills) > 0,
+            points=20,
+            action_label="Add Skill",
+            action_key="add_skill"
+        ),
+        ReadinessChecklistItem(
+            id="location",
+            title="Location & Neighborhood",
+            description="Specify your city and service radius (e.g. within 5 km).",
+            completed=bool(provider.location_name),
+            points=15,
+            action_label="Set Location",
+            action_key="set_location"
+        ),
+        ReadinessChecklistItem(
+            id="availability",
+            title="Availability & Hours",
+            description="Set comfortable morning or weekend time slots.",
+            completed=bool(provider.availability),
+            points=15,
+            action_label="Set Availability",
+            action_key="set_availability"
+        ),
+        ReadinessChecklistItem(
+            id="samples",
+            title="Work Samples Showcase",
+            description="Photos of homemade dishes, stitching patterns, or garden setups.",
+            completed=len(work_samples) > 0,
+            points=15,
+            action_label="Add Work Sample",
+            action_key="add_sample"
+        ),
+        ReadinessChecklistItem(
+            id="video",
+            title="Senior Intro Video Clip",
+            description="A short 30-second video introducing yourself and your passion.",
+            completed=bool(provider.video_intro_url),
+            points=10,
+            action_label="Upload Video",
+            action_key="upload_video"
+        ),
+        ReadinessChecklistItem(
+            id="trust",
+            title="Identity & Trust Badge",
+            description="Senior citizen community verification level.",
+            completed=(provider.trust_badge_level or "").startswith("verified"),
+            points=10,
+            action_label="Verify Trust Badge",
+            action_key="verify_trust"
+        )
+    ]
+
+    total_pts = sum(item.points for item in checklist)
+    earned_pts = sum(item.points for item in checklist if item.completed)
+    readiness_pct = int(round((earned_pts / total_pts) * 100)) if total_pts > 0 else 50
+    completed_count = sum(1 for item in checklist if item.completed)
+
+    # Save to user model
+    provider.readiness_score = readiness_pct
+    db.commit()
+
+    advice = "Your profile is in great shape! Adding a short video intro or work photos may help you stand out to nearby neighborhood requests."
+    if readiness_pct < 60:
+        advice = "Adding your skills, pricing in ₹ INR, and profile picture will significantly increase your visibility on the local Opportunity Radar."
+    elif readiness_pct < 85:
+        advice = "Almost complete! Uploading a work sample photo or a 30-second intro video will give clients full confidence."
+
+    return ReadinessResponse(
+        provider_id=provider.id,
+        readiness_percentage=readiness_pct,
+        completed_count=completed_count,
+        total_count=len(checklist),
+        checklist=checklist,
+        improvement_advice=advice
+    )
+
+
 @router.post("/upload-avatar", summary="Upload Profile Avatar Photo")
 async def upload_avatar(
     user_id: int = Query(1),
@@ -413,17 +586,29 @@ async def upload_avatar(
 
     ext = file.filename.split(".")[-1] if file.filename and "." in file.filename else "jpg"
     filename = f"avatar_{user_id}_{uuid.uuid4().hex[:8]}.{ext}"
-    
-    endpoints_dir = os.path.dirname(__file__)
-    upload_folder = os.path.abspath(os.path.join(endpoints_dir, "..", "..", "..", "uploads", "avatars"))
-    os.makedirs(upload_folder, exist_ok=True)
-    file_path = os.path.join(upload_folder, filename)
+    timestamp = int(datetime.datetime.utcnow().timestamp())
 
-    with open(file_path, "wb") as f:
-        f.write(contents)
+    # Try Supabase Storage first (persistent, accessible to all users)
+    supabase_url = upload_to_storage(
+        bucket="avatars",
+        path=filename,
+        file_bytes=contents,
+        content_type=file.content_type or "image/jpeg",
+    )
 
-    avatar_url = f"http://localhost:8000/uploads/avatars/{filename}"
-    
+    if supabase_url:
+        avatar_url = f"{supabase_url}?t={timestamp}"
+        logger.info(f"Avatar uploaded to Supabase Storage: {avatar_url}")
+    else:
+        # Fallback to local filesystem (uses canonical UPLOADS_DIR)
+        upload_folder = os.path.join(UPLOADS_DIR, "avatars")
+        os.makedirs(upload_folder, exist_ok=True)
+        file_path = os.path.join(upload_folder, filename)
+        with open(file_path, "wb") as f:
+            f.write(contents)
+        avatar_url = f"http://localhost:8000/uploads/avatars/{filename}?t={timestamp}"
+        logger.info(f"Avatar saved locally: {file_path}")
+
     user = db.query(User).filter(User.id == user_id).first()
     if user:
         user.avatar_url = avatar_url
@@ -435,3 +620,164 @@ async def upload_avatar(
         "avatar_url": avatar_url,
         "message": "Profile photo uploaded and saved successfully!"
     }
+
+
+@router.delete("/{provider_id}/avatar", summary="Remove Profile Avatar Photo")
+def remove_avatar(provider_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == provider_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Provider not found")
+
+    user.avatar_url = None
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "status": "success",
+        "message": "Avatar removed successfully. Default profile picture restored."
+    }
+
+
+@router.post("/upload-video", summary="Upload Senior Intro / Work Demo Video Clip")
+async def upload_video(
+    user_id: int = Query(1),
+    file: UploadFile = File(...),
+    title: Optional[str] = Query("Senior Intro Clip"),
+    media_type: Optional[str] = Query("video_intro"),
+    db: Session = Depends(get_db)
+):
+    allowed_types = ["video/mp4", "video/webm", "video/quicktime", "video/x-matroska"]
+    if file.content_type not in allowed_types and not (file.filename and file.filename.endswith((".mp4", ".webm", ".mov"))):
+        raise HTTPException(status_code=400, detail="Only video files (MP4, WebM, QuickTime MOV) are allowed.")
+
+    contents = await file.read()
+    if len(contents) > 50 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Video file size exceeds maximum limit of 50MB.")
+
+    ext = file.filename.split(".")[-1] if file.filename and "." in file.filename else "mp4"
+    filename = f"video_{user_id}_{uuid.uuid4().hex[:8]}.{ext}"
+    timestamp = int(datetime.datetime.utcnow().timestamp())
+
+    # Try Supabase Storage first (persistent, accessible to all users)
+    supabase_url = upload_to_storage(
+        bucket="videos",
+        path=filename,
+        file_bytes=contents,
+        content_type=file.content_type or "video/mp4",
+    )
+
+    if supabase_url:
+        video_url = f"{supabase_url}?t={timestamp}"
+        logger.info(f"Video uploaded to Supabase Storage: {video_url}")
+    else:
+        # Fallback to local filesystem (uses canonical UPLOADS_DIR)
+        upload_folder = os.path.join(UPLOADS_DIR, "videos")
+        os.makedirs(upload_folder, exist_ok=True)
+        file_path = os.path.join(upload_folder, filename)
+        with open(file_path, "wb") as f:
+            f.write(contents)
+        video_url = f"http://localhost:8000/uploads/videos/{filename}?t={timestamp}"
+        logger.info(f"Video saved locally: {file_path}")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if user:
+        user.video_intro_url = video_url
+        
+        # Also store ProfileMedia record
+        media_rec = ProfileMedia(
+            user_id=user.id,
+            media_type=media_type or "video_intro",
+            url=video_url,
+            title=title,
+            file_size_bytes=len(contents),
+            created_at=datetime.datetime.utcnow()
+        )
+        db.add(media_rec)
+        db.commit()
+        db.refresh(user)
+
+    return {
+        "status": "success",
+        "video_url": video_url,
+        "message": "Video clip uploaded and attached to profile successfully!"
+    }
+
+
+@router.delete("/{provider_id}/video", summary="Remove Senior Intro Video Clip")
+def remove_video(provider_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == provider_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Provider not found")
+
+    user.video_intro_url = None
+    db.commit()
+    db.refresh(user)
+
+    return {"status": "success", "message": "Video clip removed successfully."}
+
+
+@router.get("/{provider_id}/work-samples", response_model=List[WorkSampleResponse], summary="List Provider Work Samples")
+def list_work_samples(provider_id: int, db: Session = Depends(get_db)):
+    samples = db.query(WorkSample).filter(WorkSample.user_id == provider_id).order_by(WorkSample.created_at.desc()).all()
+    results = []
+    for ws in samples:
+        results.append(WorkSampleResponse(
+            id=ws.id,
+            user_id=ws.user_id,
+            title=ws.title,
+            category=ws.category,
+            image_url=ws.image_url,
+            description=ws.description,
+            created_at=ws.created_at.isoformat() if ws.created_at else ""
+        ))
+    return results
+
+
+@router.post("/{provider_id}/work-samples", response_model=WorkSampleResponse, summary="Add Work Sample Showcase Item")
+def add_work_sample(
+    provider_id: int,
+    sample_in: WorkSampleCreate,
+    db: Session = Depends(get_db)
+):
+    provider = db.query(User).filter(User.id == provider_id).first()
+    if not provider:
+        raise HTTPException(status_code=404, detail="Provider not found")
+
+    new_sample = WorkSample(
+        user_id=provider.id,
+        title=sample_in.title,
+        category=sample_in.category,
+        image_url=sample_in.image_url,
+        description=sample_in.description,
+        created_at=datetime.datetime.utcnow()
+    )
+    db.add(new_sample)
+    provider.work_samples_count = (provider.work_samples_count or 0) + 1
+    db.commit()
+    db.refresh(new_sample)
+
+    return WorkSampleResponse(
+        id=new_sample.id,
+        user_id=new_sample.user_id,
+        title=new_sample.title,
+        category=new_sample.category,
+        image_url=new_sample.image_url,
+        description=new_sample.description,
+        created_at=new_sample.created_at.isoformat()
+    )
+
+
+@router.delete("/{provider_id}/work-samples/{sample_id}", summary="Delete Work Sample Item")
+def delete_work_sample(provider_id: int, sample_id: int, db: Session = Depends(get_db)):
+    sample = db.query(WorkSample).filter(WorkSample.id == sample_id, WorkSample.user_id == provider_id).first()
+    if not sample:
+        raise HTTPException(status_code=404, detail="Work sample not found")
+
+    db.delete(sample)
+    user = db.query(User).filter(User.id == provider_id).first()
+    if user and (user.work_samples_count or 0) > 0:
+        user.work_samples_count = user.work_samples_count - 1
+    db.commit()
+
+    return {"status": "success", "message": "Work sample deleted successfully."}
+

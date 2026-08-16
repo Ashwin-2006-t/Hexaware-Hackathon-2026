@@ -20,15 +20,18 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173",
     ]
 
-    # Database Settings (SQLite fallback ready)
-    DATABASE_URL: str = "sqlite:///./silverhands.db"
-    SUPABASE_URL: str = ""
+    # Database Settings
+    DATABASE_URL: str = ""
+    SUPABASE_URL: str = "https://psleqiosfnkzobwuqwxu.supabase.co"
+    SUPABASE_PUBLISHABLE_KEY: str = ""
+    SUPABASE_SECRET_KEY: str = ""
+    SUPABASE_JWKS_URL: str = "https://psleqiosfnkzobwuqwxu.supabase.co/auth/v1/.well-known/jwks.json"
     SUPABASE_ANON_KEY: str = ""
     SUPABASE_SERVICE_ROLE_KEY: str = ""
 
     # Gemini AI Settings
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-1.5-flash"  # Default low-cost model for backend agent operations
+    GEMINI_MODEL: str = "gemini-3.5-flash"
 
     model_config = SettingsConfigDict(
         env_file=".env",

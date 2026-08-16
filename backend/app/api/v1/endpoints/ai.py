@@ -13,7 +13,7 @@ from app.schemas.domain import (
 from app.services.ai_service import (
     extract_skills_from_text, generate_profile_builder,
     generate_business_guidance, generate_match_explanation,
-    generate_senior_mentor_response
+    generate_senior_mentor_response, autofill_from_video_description
 )
 from app.services.matching_service import calculate_haversine_distance, calculate_match_score
 
@@ -205,3 +205,35 @@ def assistant_chat_endpoint(payload: AssistantChatRequest):
         reply=res["reply"],
         suggested_actions=res["suggested_actions"]
     )
+
+
+from pydantic import BaseModel
+from typing import Optional
+
+class VideoAutofillRequest(BaseModel):
+    video_description: str
+    user_name: Optional[str] = None
+    location: Optional[str] = None
+
+@router.post("/autofill-from-video", summary="AI Autofill Profile from Video Description/Transcript")
+def autofill_from_video_endpoint(payload: VideoAutofillRequest):
+    """
+    AI Autofill from Video:
+    Accepts a text description or transcript of a senior's intro video.
+    Returns suggested profile content (bio, skills, experience) as editable
+    pre-filled fields, clearly labeled 'AI-assisted — please review before publishing'.
+    Reuses the existing Gemini skill extraction pipeline.
+    Guardrails: Only reflects what's in the description, no invented credentials.
+    """
+    if not payload.video_description or len(payload.video_description.strip()) < 10:
+        raise HTTPException(
+            status_code=400,
+            detail="Please provide a description of your video (at least 10 characters)."
+        )
+
+    result = autofill_from_video_description(
+        video_description=payload.video_description,
+        user_name=payload.user_name,
+        location=payload.location
+    )
+    return result
