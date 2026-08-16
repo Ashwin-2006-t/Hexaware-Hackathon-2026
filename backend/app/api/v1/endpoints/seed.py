@@ -1,8 +1,10 @@
+import datetime
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.db.session import get_db, init_db
-from app.models.domain import User, Skill, ServiceListing, Booking, Review, OpportunityInterest
+from app.models.domain import User, Skill, ServiceListing, Booking, Review, OpportunityInterest, Video, Notification, Opportunity
 from app.core.security import get_password_hash
+from app.api.v1.endpoints.opportunities import DEFAULT_OPPORTUNITIES
 
 router = APIRouter()
 
@@ -12,7 +14,10 @@ def seed_database(db: Session = Depends(get_db)):
     init_db(force_recreate=True)
 
     # Clear existing data if present to ensure clean seed
+    db.query(Notification).delete()
+    db.query(Video).delete()
     db.query(OpportunityInterest).delete()
+    db.query(Opportunity).delete()
     db.query(Review).delete()
     db.query(Booking).delete()
     db.query(ServiceListing).delete()
@@ -54,9 +59,9 @@ def seed_database(db: Session = Depends(get_db)):
             "phone": "+91 98200 12345",
             "bio": "Lifelong homemaker from Coimbatore with 38 years of culinary passion. Specialized in authentic South Indian snacks, podis, traditional mango avakaya, and daily tiffins.",
             "avatar_url": "/avatars/seed/meenakshi_amma.jpg",
-            "location_name": "R.S. Puram, Coimbatore / Mumbai",
-            "latitude": 11.0168,
-            "longitude": 76.9558,
+            "location_name": "Dadar / Matunga, Mumbai",
+            "latitude": 19.0178,
+            "longitude": 72.8478,
             "languages": "Tamil, Hindi, English",
             "availability": "Weekday Mornings & Weekends",
             "completed_services_count": 28,
@@ -331,9 +336,27 @@ def seed_database(db: Session = Depends(get_db)):
     db.add(review2)
     db.add(review3)
 
+    # Seed Platform Opportunities
+    for d_opp in DEFAULT_OPPORTUNITIES:
+        opp_model = Opportunity(
+            id=d_opp["id"],
+            customer_id=customer1.id,
+            title=d_opp["title"],
+            category=d_opp["category"],
+            customer_location=d_opp["customer_location"],
+            latitude=19.0760 if "Mumbai" in d_opp["customer_location"] else 13.0827 if "Chennai" in d_opp["customer_location"] else 12.9716,
+            longitude=72.8777 if "Mumbai" in d_opp["customer_location"] else 80.2707 if "Chennai" in d_opp["customer_location"] else 77.5946,
+            budget_range=d_opp["budget_range"],
+            description=d_opp["description"],
+            status="open",
+            created_at=datetime.datetime.utcnow()
+        )
+        db.add(opp_model)
+
     db.commit()
 
     return {
         "status": "success",
-        "message": f"Successfully seeded {len(created_providers)} Indian senior providers, {len(created_services)} services, bookings, and verified reviews!"
+        "message": f"Successfully seeded {len(created_providers)} Indian senior providers, {len(created_services)} services, opportunities, bookings, and verified reviews!"
     }
+

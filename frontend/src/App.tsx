@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { Header } from './components/Header'
 import { HeroAndFlow } from './components/HeroAndFlow'
 import { Marketplace } from './components/Marketplace'
+import { MapView } from './components/MapView'
+import { NotificationCenter } from './components/NotificationCenter'
 import { OpportunitiesView } from './components/OpportunitiesView'
 import { SmartMatch } from './components/SmartMatch'
 import { SkillExtractor } from './components/SkillExtractor'
@@ -20,11 +22,22 @@ export default function App() {
   const [language, setLanguage] = useState<Language>('en')
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false)
+  const [showNotifications, setShowNotifications] = useState<boolean>(false)
+  const [unreadNotifCount, setUnreadNotifCount] = useState<number>(0)
 
   // System status state
   const [backendOnline, setBackendOnline] = useState<boolean>(false)
   const [seeding, setSeeding] = useState<boolean>(false)
   const [seedNotice, setSeedNotice] = useState<string | null>(null)
+
+  const checkNotifications = async (user?: User | null) => {
+    try {
+      const notifs = await api.getNotifications(user?.id)
+      setUnreadNotifCount(notifs.filter(n => !n.read).length)
+    } catch {
+      // quiet fallback
+    }
+  }
 
   const checkBackend = async () => {
     try {
@@ -34,6 +47,7 @@ export default function App() {
       // Load user profile from stored token / backend
       const me = await api.getMe()
       setCurrentUser(me)
+      checkNotifications(me)
     } catch {
       setBackendOnline(false)
     }
@@ -93,6 +107,7 @@ export default function App() {
         : 'bg-[#F7F9FC] text-slate-900'
     }`}>
       {/* Navigation Header (Deep Navy #0A0F24) */}
+      {/* Navigation Header (Deep Navy #0A0F24) */}
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -105,6 +120,8 @@ export default function App() {
         currentUser={currentUser}
         setCurrentUser={setCurrentUser}
         onOpenAuth={() => setShowAuthModal(true)}
+        onOpenNotifications={() => setShowNotifications(true)}
+        unreadNotificationsCount={unreadNotifCount}
       />
 
       {/* Backend & Real Gemini Engine Status Toolbar */}
@@ -167,6 +184,16 @@ export default function App() {
           </>
         )}
 
+        {activeTab === 'map' && (
+          <MapView
+            highContrast={highContrast}
+            currentUser={currentUser}
+            language={language}
+            onSelectProvider={() => setActiveTab('marketplace')}
+            onRequestBooking={() => setActiveTab('dashboard')}
+          />
+        )}
+
         {activeTab === 'opportunities' && (
           <OpportunitiesView
             highContrast={highContrast}
@@ -205,6 +232,20 @@ export default function App() {
           />
         )}
       </main>
+
+      {/* Quiet Insight Notifications Drawer */}
+      <NotificationCenter
+        isOpen={showNotifications}
+        onClose={() => {
+          setShowNotifications(false)
+          checkNotifications(currentUser)
+        }}
+        highContrast={highContrast}
+        currentUser={currentUser}
+        language={language}
+        onNavigateTab={(tab) => setActiveTab(tab)}
+      />
+
 
       {/* Hexaware-Inspired Enterprise Deep Navy Footer (#0A0F24) */}
       <footer className={`border-t py-10 transition-colors ${

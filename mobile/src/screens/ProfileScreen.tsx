@@ -14,7 +14,8 @@ import { Colors, HighContrastColors, Typography } from '../theme/tokens'
 import { translations, type Language } from '../i18n/translations'
 import { api, getApiBaseUrl, setApiBaseUrl } from '../services/api'
 import { formatINR } from '../utils/formatters'
-import type { Booking, ServiceListing, User } from '../types'
+import * as Speech from 'expo-speech'
+import type { Booking, ServiceListing, User, VideoItem } from '../types'
 
 interface ProfileScreenProps {
   highContrast: boolean
@@ -45,10 +46,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const theme = highContrast ? HighContrastColors : Colors
   const fs = Typography.fontSizes[fontSize]
 
-  const [activeTab, setActiveTab] = useState<'bookings' | 'services' | 'settings'>('bookings')
+  const [activeTab, setActiveTab] = useState<'bookings' | 'videos' | 'services' | 'settings'>('bookings')
   const [bookings, setBookings] = useState<Booking[]>([])
   const [services, setServices] = useState<ServiceListing[]>([])
+  const [videos, setVideos] = useState<VideoItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
+  const [serviceRadius, setServiceRadius] = useState<number>(currentUser?.service_radius || 10)
 
   // Custom API configuration state
   const [customApiUrl, setCustomApiUrl] = useState<string>('')
@@ -81,16 +84,75 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const loadProfileData = async () => {
     setLoading(true)
     try {
-      const [bookingsData, servicesData] = await Promise.all([
+      const [bookingsData, servicesData, videosData] = await Promise.all([
         api.getUserBookings(userId).catch(() => []),
         api.getServices().catch(() => []),
+        api.getProviderVideos(userId).catch(() => []),
       ])
       setBookings(bookingsData)
       setServices(servicesData.filter((s) => s.provider_id === userId))
+      setVideos(videosData)
     } catch {
       // fallback
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleToggleVideoVisibility = async (video: VideoItem) => {
+    const nextVisibility = video.visibility === 'public' ? 'private' : 'public'
+    try {
+      const updated = await api.updateVideoDetails(video.id, { visibility: nextVisibility })
+      setVideos(prev => prev.map(v => v.id === video.id ? { ...v, visibility: updated.visibility } : v))
+      Alert.alert('Updated', `Video visibility changed to ${updated.visibility}`)
+    } catch (err: any) {
+      Alert.alert('Error', err.message)
+    }
+  }
+
+  const handleDeleteVideo = async (video: VideoItem) => {
+    Alert.alert(
+      'Delete Video Demo',
+      'Are you sure you want to permanently delete this video demo?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.deleteProviderVideo(video.id)
+              setVideos(prev => prev.filter(v => v.id !== video.id))
+              Alert.alert('Deleted', 'Video removed successfully.')
+            } catch (err: any) {
+              Alert.alert('Delete Error', err.message)
+            }
+          }
+        }
+      ]
+    )
+  }
+
+  const handlePlayAudio = (textToSpeak: string) => {
+    Speech.stop()
+    Speech.speak(textToSpeak, {
+      language: language === 'ta' ? 'ta-IN' : language === 'hi' ? 'hi-IN' : 'en-IN',
+      pitch: 1.0,
+      rate: 0.95
+    })
+  }
+
+  const handleSaveRadius = async (newRadius: number) => {
+    setServiceRadius(newRadius)
+    try {
+      await api.updateLocation({
+        latitude: currentUser?.latitude || 19.0760,
+        longitude: currentUser?.longitude || 72.8777,
+        service_radius: newRadius
+      })
+      Alert.alert('Radius Saved', `Service discovery radius set to ${newRadius} km.`)
+    } catch (err: any) {
+      Alert.alert('Error', err.message)
     }
   }
 
@@ -188,8 +250,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       <View style={styles.subTabsRow}>
         {[
           { id: 'bookings', label: `${t.navBookings} (${bookings.length})` },
+          { id: 'videos', label: `My Videos (${videos.length})` },
           { id: 'services', label: `My Services (${services.length})` },
-          { id: 'settings', label: 'Settings & Accessibility' },
+          { id: 'settings', label: 'Settings' },
         ].map((tab) => (
           <TouchableOpacity
             key={tab.id}
@@ -205,6 +268,76 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </TouchableOpacity>
         ))}
       </View>
+
+      {/* Videos Tab */}
+      {activeTab === 'videos' && (
+        <View style={styles.tabContent}>
+          {videos.length === 0 ? (
+            <View style={[styles.emptyCard, { backgroundColor: theme.bgSurface, borderColor: theme.borderSubtle }]}>
+              <Text style={styles.emptyIcon}>📹</Text>
+              <Text style={[styles.emptyTitle, { fontSize: fs.base, color: theme.textDark }]}>No videos uploaded</Text>
+              <Text style={[styles.emptySub, { fontSize: fs.xs, color: theme.textMuted }]}>
+                Upload a 30s craft or cooking demo to boost your inquiry rate by 3x!
+              </Text>
+            </View>
+          ) : (
+            videos.map((vid) => (
+              <View
+                key={vid.id}
+                style={[styles.bookingCard, { backgroundColor: theme.bgSurface, borderColor: theme.borderSubtle }]}
+              >
+                <View style={styles.bookingHeader}>
+                  <View style={[
+                    styles.statusBadge,
+                    vid.visibility === 'public' ? styles.statusConfirmed : styles.statusPending
+                  ]}>
+                    <Text style={styles.statusText}>
+                      {vid.visibility === 'public' ? '🟢 Public' : '🔒 Private'}
+                    </Text>
+                  </View>
+                  <Text style={styles.bookingId}>{vid.duration_seconds || 45}s • {vid.category}</Text>
+                </View>
+
+                <Text style={[styles.bookingTitle, { fontSize: fs.base, color: theme.textDark }]}>
+                  {vid.title}
+                </Text>
+                {vid.description && (
+                  <Text style={[styles.bookingMeta, { lineHeight: 18 }]}>
+                    {vid.description}
+                  </Text>
+                )}
+
+                <View style={styles.bookingFooter}>
+                  {vid.description && (
+                    <TouchableOpacity
+                      onPress={() => handlePlayAudio(vid.description || '')}
+                      style={[styles.actionBtn, { backgroundColor: '#4099FF' }]}
+                    >
+                      <Text style={styles.actionBtnText}>🔊 Listen</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  <TouchableOpacity
+                    onPress={() => handleToggleVideoVisibility(vid)}
+                    style={[styles.actionBtn, { backgroundColor: vid.visibility === 'public' ? '#64748B' : '#10B981' }]}
+                  >
+                    <Text style={styles.actionBtnText}>
+                      {vid.visibility === 'public' ? 'Make Private' : 'Make Public'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => handleDeleteVideo(vid)}
+                    style={[styles.actionBtn, { backgroundColor: '#EF4444' }]}
+                  >
+                    <Text style={styles.actionBtnText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+      )}
 
       {/* 1. Bookings Tab */}
       {activeTab === 'bookings' && (

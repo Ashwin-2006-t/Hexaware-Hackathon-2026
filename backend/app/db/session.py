@@ -100,6 +100,8 @@ def init_db(force_recreate: bool = False):
                     conn.execute(text("ALTER TABLE users ADD COLUMN work_samples_count INTEGER DEFAULT 0;"))
                 if 'readiness_score' not in user_columns:
                     conn.execute(text("ALTER TABLE users ADD COLUMN readiness_score INTEGER DEFAULT 70;"))
+                if 'service_radius' not in user_columns:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN service_radius FLOAT DEFAULT 10.0;"))
                 conn.commit()
     except Exception as e:
         logger.debug(f"Schema column check: {e}")

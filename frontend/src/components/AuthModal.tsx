@@ -3,6 +3,7 @@ import { X, HeartHandshake, Eye, EyeOff, ShieldCheck, Sparkles, UserCheck, Arrow
 import { api } from '../services/api'
 import type { User } from '../types'
 import { translations, type Language } from '../i18n/translations'
+import { LocationAutocomplete } from './LocationAutocomplete'
 
 interface AuthModalProps {
   onClose: () => void
@@ -26,6 +27,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, highCo
   const [age, setAge] = useState<number>(68)
   const [phone, setPhone] = useState<string>('+91 98200 12345')
   const [locationName, setLocationName] = useState<string>('Matunga / Dadar, Mumbai')
+  const [latitude, setLatitude] = useState<number | undefined>(19.0269)
+  const [longitude, setLongitude] = useState<number | undefined>(72.8553)
   const [languages, setLanguages] = useState<string>('Tamil, Marathi, Hindi, English')
   const [bio, setBio] = useState<string>('Traditional South Indian cooking, home tiffin, and pickle specialist with 38 years experience')
 
@@ -56,6 +59,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, highCo
           age: Number(age),
           phone,
           location_name: locationName,
+          latitude,
+          longitude,
           languages,
           bio
         })
@@ -268,14 +273,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess, highCo
               <>
                 {/* Step 2: Location & Skills */}
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Neighborhood / City</label>
-                  <input
-                    type="text"
-                    required
+                  <LocationAutocomplete
                     value={locationName}
-                    onChange={(e) => setLocationName(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-medium focus:outline-none focus:border-[#4B32E6]"
-                    placeholder="e.g. Dadar, Mumbai or Mylapore, Chennai"
+                    initialLatitude={latitude}
+                    initialLongitude={longitude}
+                    onLocationChange={(loc) => {
+                      setLocationName(loc.locationName)
+                      setLatitude(loc.latitude)
+                      setLongitude(loc.longitude)
+                    }}
+                    highContrast={highContrast}
+                    language={language}
+                    label="Neighborhood / City Location"
+                    required
                   />
                 </div>
 

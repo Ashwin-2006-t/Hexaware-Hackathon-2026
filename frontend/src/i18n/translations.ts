@@ -73,6 +73,32 @@ export interface TranslationDict {
   step4Desc: string
   aiShowcaseTitle: string
   aiShowcaseSub: string
+  navMap: string
+  notifications: string
+  quietInsights: string
+  myVideos: string
+  uploadVideo: string
+  aiDescription: string
+  aiAssistedReview: string
+  voiceInput: string
+  listenDescription: string
+  opportunityEngine: string
+  expandRadius: string
+  adjustPricing: string
+  extendAvailability: string
+  deleteVideo: string
+  confirmDelete: string
+  publicVisibility: string
+  privateVisibility: string
+  useMyLocation: string
+  radiusKm: string
+  silverhandsProvider: string
+  silverhandsOpportunity: string
+  realNearbyBusiness: string
+  currentLocation: string
+  markAllRead: string
+  noNotifications: string
+  noVideos: string
 }
 
 export const translations: Record<Language, TranslationDict> = {
@@ -148,7 +174,33 @@ export const translations: Record<Language, TranslationDict> = {
     step4Title: "Earn & Grow",
     step4Desc: "Complete bookings safely, earn 5-star reviews, and build trust.",
     aiShowcaseTitle: "Enterprise-Grade AI Architecture",
-    aiShowcaseSub: "5 purpose-built AI agents delivering grounded, fair livelihood recommendations."
+    aiShowcaseSub: "5 purpose-built AI agents delivering grounded, fair livelihood recommendations.",
+    navMap: "Live Discovery Map",
+    notifications: "Insights & Nudges",
+    quietInsights: "Quiet Insight Feed",
+    myVideos: "My Showcase Videos",
+    uploadVideo: "Upload Video Demo",
+    aiDescription: "AI Description Assist",
+    aiAssistedReview: "AI-assisted — please review before publishing",
+    voiceInput: "Voice Input (Speak)",
+    listenDescription: "Listen (Voice TTS)",
+    opportunityEngine: "Opportunity Improvement Engine",
+    expandRadius: "Expand Service Radius",
+    adjustPricing: "Optimize Hourly Rate",
+    extendAvailability: "Extend Availability",
+    deleteVideo: "Delete Video",
+    confirmDelete: "Are you sure you want to permanently delete this video?",
+    publicVisibility: "Public (Visible to All)",
+    privateVisibility: "Private (Draft Only)",
+    useMyLocation: "Use My Live Location",
+    radiusKm: "Discovery Radius",
+    silverhandsProvider: "SilverHands Provider",
+    silverhandsOpportunity: "SilverHands Opportunity",
+    realNearbyBusiness: "Real Nearby Business",
+    currentLocation: "Your Live Location",
+    markAllRead: "Mark All as Read",
+    noNotifications: "No new notifications right now. Your quiet insights will appear here.",
+    noVideos: "No videos uploaded yet. Add a short 30-second craft or cooking introduction!"
   },
   ta: {
     tagline: "வாழ்நாள் அனுபவங்களை புதிய வாய்ப்புகளாக மாற்றுங்கள்.",
@@ -222,7 +274,33 @@ export const translations: Record<Language, TranslationDict> = {
     step4Title: "வருவாய் ஈட்டி வளர்க",
     step4Desc: "பணிகளை வெற்றிகரமாக முடித்து, 5-star மதிப்பாய்வுகளுடன் முன்னேறுங்கள்.",
     aiShowcaseTitle: "நவீன AI கட்டமைப்பு",
-    aiShowcaseSub: "5 பிரத்யேக AI முகவர்கள் துல்லியமான மற்றும் நியாயமான வழிகாட்டலை வழங்குகின்றன."
+    aiShowcaseSub: "5 பிரத்யேக AI முகவர்கள் துல்லியமான மற்றும் நியாயமான வழிகாட்டலை வழங்குகின்றன.",
+    navMap: "நேரலை வரைபடம்",
+    notifications: "அறிவிப்புகள் & வழிகாட்டல்",
+    quietInsights: "அமைதியான நுண்ணறிவு ஊட்டம்",
+    myVideos: "எனது வீடியோக்கள்",
+    uploadVideo: "வீடியோ பதிவேற்று",
+    aiDescription: "AI விளக்கம் உதவி",
+    aiAssistedReview: "AI-உதவி மூலம் உருவாக்கப்பட்டது — சரிபார்த்து பதிவிடவும்",
+    voiceInput: "குரல் வழி உள்ளீடு",
+    listenDescription: "கேட்கவும் (TTS குரல்)",
+    opportunityEngine: "வாய்ப்பு மேம்பாட்டு எஞ்சின்",
+    expandRadius: "சேவை எல்லையை விரிவுபடுத்து",
+    adjustPricing: "கட்டணத்தை மேம்படுத்து",
+    extendAvailability: "நேரத்தை நீட்டிக்கவும்",
+    deleteVideo: "வீடியோவை நீக்கு",
+    confirmDelete: "இந்த வீடியோவை நிரந்தரமாக நீக்க விரும்புகிறீர்களா?",
+    publicVisibility: "பொது (அனைவருக்கும் தெரியும்)",
+    privateVisibility: "தனிப்பட்டது (வரைவு மட்டும்)",
+    useMyLocation: "எனது தற்போதைய இருப்பிடம்",
+    radiusKm: "தேடல் ஆரம்",
+    silverhandsProvider: "SilverHands சேவை வழங்குநர்",
+    silverhandsOpportunity: "SilverHands நேரலை வாய்ப்பு",
+    realNearbyBusiness: "அருகிலுள்ள உண்மையான வணிகம்",
+    currentLocation: "உங்கள் இருப்பிடம்",
+    markAllRead: "அனைத்தையும் படித்ததாக குறி",
+    noNotifications: "தற்போது புதிய அறிவிப்புகள் இல்லை.",
+    noVideos: "இன்னும் வீடியோக்கள் பதிவேற்றப்படவில்லை. உங்கள் 30-வினாடி கைவினை வீடியோவைச் சேர்க்கவும்!"
   },
   hi: {
     tagline: "आजीवन कौशल को नए अवसरों में बदलें।",
@@ -296,6 +374,33 @@ export const translations: Record<Language, TranslationDict> = {
     step4Title: "कमाएं और बढ़ें",
     step4Desc: "सुरक्षित रूप से बुकिंग पूरी करें, 5-स्टार रेटिंग पाएं और विश्वास बनाएं।",
     aiShowcaseTitle: "उन्नत AI संरचना",
-    aiShowcaseSub: "5 समर्पित AI एजेंट सटीक और उचित आजीविका सुझाव प्रदान करते हैं।"
+    aiShowcaseSub: "5 समर्पित AI एजेंट सटीक और उचित आजीविका सुझाव प्रदान करते हैं।",
+    navMap: "लाइव खोज नक्शा",
+    notifications: "सूचनाएँ और मार्गदर्शन",
+    quietInsights: "शांत अंतर्दृष्टि फ़ीड",
+    myVideos: "मेरे वीडियो",
+    uploadVideo: "वीडियो अपलोड करें",
+    aiDescription: "AI विवरण सहायक",
+    aiAssistedReview: "AI-सहायता प्राप्त — कृपया प्रकाशित करने से पहले जांचें",
+    voiceInput: "ध्वनि इनपुट (बोलें)",
+    listenDescription: "सुनें (TTS आवाज़)",
+    opportunityEngine: "अवसर सुधार इंजन",
+    expandRadius: "सेवा का दायरा बढ़ाएं",
+    adjustPricing: "प्रति घंटा दर अनुकूलित करें",
+    extendAvailability: "उपलब्धता बढ़ाएं",
+    deleteVideo: "वीडियो हटाएं",
+    confirmDelete: "क्या आप वाकई इस वीडियो को हटाना चाहते हैं?",
+    publicVisibility: "सार्वजनिक (सभी को दिखाई देगा)",
+    privateVisibility: "निजी (केवल ड्राफ्ट)",
+    useMyLocation: "मेरा वर्तमान स्थान",
+    radiusKm: "खोज दायरा",
+    silverhandsProvider: "SilverHands सेवा प्रदाता",
+    silverhandsOpportunity: "SilverHands लाइव अवसर",
+    realNearbyBusiness: "आस-पास का वास्तविक व्यवसाय",
+    currentLocation: "आपका स्थान",
+    markAllRead: "सभी को पढ़ा हुआ चिह्नित करें",
+    noNotifications: "फ़िलहाल कोई नई सूचना नहीं है।",
+    noVideos: "अभी तक कोई वीडियो नहीं जोड़ा गया है। अपना 30-सेकंड का क्राफ्ट या कुकिंग वीडियो जोड़ें!"
   }
 }
+

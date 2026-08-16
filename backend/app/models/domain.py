@@ -19,6 +19,7 @@ class User(Base):
     location_name = Column(String, nullable=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
+    service_radius = Column(Float, default=10.0)  # in km
     languages = Column(String, default="English, Hindi")
     availability = Column(String, default="Flexible / Weekday Mornings")
     is_published = Column(Boolean, default=True)
@@ -39,6 +40,8 @@ class User(Base):
     opportunity_interests = relationship("OpportunityInterest", back_populates="provider", cascade="all, delete-orphan")
     work_samples = relationship("WorkSample", back_populates="user", cascade="all, delete-orphan")
     profile_media = relationship("ProfileMedia", back_populates="user", cascade="all, delete-orphan")
+    videos = relationship("Video", back_populates="provider", cascade="all, delete-orphan")
+    notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
 
 
 class Skill(Base):
@@ -170,3 +173,38 @@ class Opportunity(Base):
     description = Column(Text, nullable=False)
     status = Column(String, default="open")  # 'open', 'accepted', 'completed', 'cancelled'
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class Video(Base):
+    __tablename__ = "videos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    provider_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    storage_path = Column(String, nullable=True)
+    url = Column(String, nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    visibility = Column(String, default="public")  # 'public', 'private'
+    category = Column(String, default="General")
+    ai_generated = Column(Boolean, default=False)
+    duration_seconds = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    provider = relationship("User", back_populates="videos")
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    type = Column(String, default="opportunity")  # 'opportunity', 'expansion', 'profile', 'availability', 'pricing', 'work_sample', 'interest'
+    title = Column(String, nullable=False)
+    message = Column(Text, nullable=False)
+    action = Column(String, nullable=True)  # 'radius_settings', 'video_upload', 'profile_editor', 'availability', 'opportunity_engine', 'map', 'view_opportunity'
+    action_payload = Column(String, nullable=True)
+    read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User", back_populates="notifications")

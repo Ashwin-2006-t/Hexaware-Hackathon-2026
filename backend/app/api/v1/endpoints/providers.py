@@ -3,14 +3,17 @@ import uuid
 import logging
 import datetime
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Header, Form
 from sqlalchemy.orm import Session
 from app.db.session import get_db, UPLOADS_DIR
 from app.models.domain import (
     User, Skill, ServiceListing, Review, Booking, OpportunityInterest,
-    WorkSample, ProfileMedia
+    WorkSample, ProfileMedia, Video
 )
-from app.services.supabase_client import upload_to_storage
+from app.services.supabase_client import upload_to_storage, delete_from_storage
+from app.core.config import settings
+from jose import jwt, JWTError
 
 logger = logging.getLogger(__name__)
 from app.schemas.domain import (
@@ -19,7 +22,8 @@ from app.schemas.domain import (
     SkillPassportResponse, SkillPassportItem,
     ReadinessResponse, ReadinessChecklistItem,
     WorkSampleResponse, WorkSampleCreate,
-    ProfileMediaResponse, ProfileMediaCreate
+    ProfileMediaResponse, ProfileMediaCreate,
+    VideoResponse, VideoCreate, VideoUpdate
 )
 
 router = APIRouter()
@@ -703,6 +707,227 @@ async def upload_video(
     }
 
 
+def get_token_user_id(authorization: Optional[str]) -> Optional[int]:
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    token = authorization.split(" ")[1]
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        uid = payload.get("sub")
+        return int(uid) if uid else None
+    except Exception:
+        return None
+
+
+# --- Video Gallery & Management Endpoints ---
+
+@router.get("/{provider_id}/videos", response_model=List[VideoResponse], summary="List Provider Videos (Public for Visitors, All for Owner)")
+def list_provider_videos(
+    provider_id: int,
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns videos for a provider.
+    Enforces authorization:
+    - If caller is the provider (owner), returns all (public + private).
+    - If caller is another user or unauthenticated, returns ONLY public videos.
+    """
+    caller_id = get_token_user_id(authorization)
+    is_owner = (caller_id == provider_id)
+
+    query = db.query(Video).filter(Video.provider_id == provider_id)
+    if not is_owner:
+        query = query.filter(Video.visibility == "public")
+    
+    videos = query.order_by(Video.created_at.desc()).all()
+
+    # If no videos in DB yet but provider has video_intro_url, create a default video record
+    if not videos:
+        provider = db.query(User).filter(User.id == provider_id).first()
+        if provider and provider.video_intro_url:
+            intro_video = Video(
+                provider_id=provider.id,
+                url=provider.video_intro_url,
+                title="Skill Introduction & Craftsmanship Demo",
+                description=f"Personal introduction by {provider.full_name}, verified specialist.",
+                visibility="public",
+                category="General",
+                ai_generated=False,
+                duration_seconds=35,
+                created_at=provider.created_at or datetime.datetime.utcnow(),
+                updated_at=datetime.datetime.utcnow()
+            )
+            db.add(intro_video)
+            db.commit()
+            db.refresh(intro_video)
+            videos = [intro_video]
+
+    return [
+        VideoResponse(
+            id=v.id,
+            provider_id=v.provider_id,
+            storage_path=v.storage_path,
+            url=v.url,
+            title=v.title,
+            description=v.description,
+            visibility=v.visibility or "public",
+            category=v.category or "General",
+            ai_generated=v.ai_generated or False,
+            duration_seconds=v.duration_seconds,
+            created_at=v.created_at.isoformat() if v.created_at else "",
+            updated_at=v.updated_at.isoformat() if v.updated_at else None
+        )
+        for v in videos
+    ]
+
+
+@router.post("/{provider_id}/videos", response_model=VideoResponse, summary="Add Video to Provider Gallery")
+def create_provider_video(
+    provider_id: int,
+    video_in: VideoCreate,
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Adds a new video to the provider's gallery. Enforces owner authorization.
+    """
+    caller_id = get_token_user_id(authorization)
+    if caller_id and caller_id != provider_id:
+        raise HTTPException(status_code=403, detail="You can only upload videos to your own profile.")
+
+    provider = db.query(User).filter(User.id == provider_id).first()
+    if not provider:
+        raise HTTPException(status_code=404, detail="Provider not found")
+
+    new_video = Video(
+        provider_id=provider.id,
+        storage_path=video_in.storage_path,
+        url=video_in.url or "https://www.w3schools.com/html/mov_bbb.mp4",
+        title=video_in.title,
+        description=video_in.description,
+        visibility=video_in.visibility or "public",
+        category=video_in.category or "General",
+        ai_generated=video_in.ai_generated or False,
+        duration_seconds=video_in.duration_seconds or 30,
+        created_at=datetime.datetime.utcnow(),
+        updated_at=datetime.datetime.utcnow()
+    )
+    db.add(new_video)
+    
+    # Also set as video_intro_url if not set
+    if not provider.video_intro_url:
+        provider.video_intro_url = new_video.url
+
+    db.commit()
+    db.refresh(new_video)
+
+    return VideoResponse(
+        id=new_video.id,
+        provider_id=new_video.provider_id,
+        storage_path=new_video.storage_path,
+        url=new_video.url,
+        title=new_video.title,
+        description=new_video.description,
+        visibility=new_video.visibility,
+        category=new_video.category,
+        ai_generated=new_video.ai_generated,
+        duration_seconds=new_video.duration_seconds,
+        created_at=new_video.created_at.isoformat(),
+        updated_at=new_video.updated_at.isoformat()
+    )
+
+
+@router.patch("/videos/{video_id}", response_model=VideoResponse, summary="Edit Video Details & Visibility")
+def update_video_details(
+    video_id: int,
+    video_update: VideoUpdate,
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Updates video title, description, category, or visibility. Owner-only.
+    """
+    video = db.query(Video).filter(Video.id == video_id).first()
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    caller_id = get_token_user_id(authorization)
+    if caller_id and caller_id != video.provider_id:
+        raise HTTPException(status_code=403, detail="Unauthorized: You can only edit your own videos.")
+
+    if video_update.title is not None:
+        video.title = video_update.title
+    if video_update.description is not None:
+        video.description = video_update.description
+    if video_update.category is not None:
+        video.category = video_update.category
+    if video_update.visibility is not None:
+        if video_update.visibility not in ["public", "private"]:
+            raise HTTPException(status_code=400, detail="Visibility must be 'public' or 'private'")
+        video.visibility = video_update.visibility
+    if video_update.ai_generated is not None:
+        video.ai_generated = video_update.ai_generated
+
+    video.updated_at = datetime.datetime.utcnow()
+    db.commit()
+    db.refresh(video)
+
+    return VideoResponse(
+        id=video.id,
+        provider_id=video.provider_id,
+        storage_path=video.storage_path,
+        url=video.url,
+        title=video.title,
+        description=video.description,
+        visibility=video.visibility,
+        category=video.category,
+        ai_generated=video.ai_generated,
+        duration_seconds=video.duration_seconds,
+        created_at=video.created_at.isoformat() if video.created_at else "",
+        updated_at=video.updated_at.isoformat() if video.updated_at else None
+    )
+
+
+@router.delete("/videos/{video_id}", summary="Delete Video from DB & Supabase Storage")
+def delete_provider_video(
+    video_id: int,
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Deletes video from database and removes underlying file from Supabase Storage / local disk.
+    Enforces owner authorization.
+    """
+    video = db.query(Video).filter(Video.id == video_id).first()
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    caller_id = get_token_user_id(authorization)
+    if caller_id and caller_id != video.provider_id:
+        raise HTTPException(status_code=403, detail="Unauthorized: You can only delete your own videos.")
+
+    provider_id = video.provider_id
+    storage_path = video.storage_path
+
+    # Delete from Supabase Storage if storage_path is recorded
+    if storage_path:
+        delete_from_storage(bucket="videos", path=storage_path)
+
+    # Delete DB row
+    db.delete(video)
+
+    # If this video was the user's primary video_intro_url, update or clear it
+    user = db.query(User).filter(User.id == provider_id).first()
+    if user and user.video_intro_url == video.url:
+        remaining_video = db.query(Video).filter(Video.provider_id == provider_id).first()
+        user.video_intro_url = remaining_video.url if remaining_video else None
+
+    db.commit()
+
+    return {"status": "success", "message": "Video successfully deleted from storage and database."}
+
+
 @router.delete("/{provider_id}/video", summary="Remove Senior Intro Video Clip")
 def remove_video(provider_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == provider_id).first()
@@ -780,4 +1005,78 @@ def delete_work_sample(provider_id: int, sample_id: int, db: Session = Depends(g
     db.commit()
 
     return {"status": "success", "message": "Work sample deleted successfully."}
+
+
+class ProviderProfileUpdate(BaseModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    bio: Optional[str] = None
+    location_name: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    languages: Optional[str] = None
+    availability: Optional[str] = None
+    service_radius: Optional[float] = None
+    user_type: Optional[str] = None
+    age: Optional[int] = None
+
+
+@router.put("/{provider_id}/profile", response_model=UserResponse, summary="Update Provider Profile & Resolved Geolocation Coordinates")
+def update_provider_profile(
+    provider_id: int,
+    profile_in: ProviderProfileUpdate,
+    db: Session = Depends(get_db)
+):
+    provider = db.query(User).filter(User.id == provider_id).first()
+    if not provider:
+        raise HTTPException(status_code=404, detail="Provider not found")
+    
+    if profile_in.full_name is not None:
+        provider.full_name = profile_in.full_name
+    if profile_in.phone is not None:
+        provider.phone = profile_in.phone
+    if profile_in.bio is not None:
+        provider.bio = profile_in.bio
+    if profile_in.location_name is not None:
+        provider.location_name = profile_in.location_name
+    if profile_in.latitude is not None:
+        provider.latitude = profile_in.latitude
+    if profile_in.longitude is not None:
+        provider.longitude = profile_in.longitude
+    if profile_in.languages is not None:
+        provider.languages = profile_in.languages
+    if profile_in.availability is not None:
+        provider.availability = profile_in.availability
+    if profile_in.service_radius is not None and profile_in.service_radius > 0:
+        provider.service_radius = profile_in.service_radius
+    if profile_in.user_type is not None:
+        provider.user_type = profile_in.user_type
+    if profile_in.age is not None:
+        provider.age = profile_in.age
+
+    db.commit()
+    db.refresh(provider)
+
+    return UserResponse(
+        id=provider.id,
+        email=provider.email,
+        full_name=provider.full_name,
+        role=provider.role,
+        user_type=provider.user_type,
+        age=provider.age,
+        phone=provider.phone,
+        bio=provider.bio,
+        avatar_url=provider.avatar_url,
+        location_name=provider.location_name,
+        latitude=provider.latitude,
+        longitude=provider.longitude,
+        languages=provider.languages,
+        availability=provider.availability,
+        is_published=provider.is_published,
+        is_active=provider.is_active,
+        completed_services_count=provider.completed_services_count or 0,
+        trust_badge_level=provider.trust_badge_level or "verified_senior",
+        created_at=provider.created_at.isoformat() if provider.created_at else ""
+    )
+
 

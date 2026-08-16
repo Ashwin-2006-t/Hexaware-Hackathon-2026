@@ -443,3 +443,39 @@ class OpportunityDetailResponse(BaseModel):
     match_reasons: Optional[List[str]] = None
     explanation: Optional[str] = None
 
+
+# --- Video Management Schemas ---
+class VideoCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    category: Optional[str] = "General"
+    visibility: Optional[str] = "public"  # 'public', 'private'
+    url: Optional[str] = None
+    storage_path: Optional[str] = None
+    ai_generated: Optional[bool] = False
+    duration_seconds: Optional[int] = 30
+
+class VideoUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    visibility: Optional[str] = None
+    ai_generated: Optional[bool] = None
+
+class VideoResponse(BaseModel):
+    id: int
+    provider_id: int
+    storage_path: Optional[str] = None
+    url: str
+    title: str
+    description: Optional[str] = None
+    visibility: str = "public"
+    category: str = "General"
+    ai_generated: bool = False
+    duration_seconds: Optional[int] = None
+    created_at: str
+    updated_at: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+

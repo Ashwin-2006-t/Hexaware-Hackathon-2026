@@ -20,6 +20,7 @@ import { Header } from './src/components/Header'
 import { AuthModal } from './src/components/AuthModal'
 import { SplashScreen } from './src/screens/SplashScreen'
 import { HomeScreen } from './src/screens/HomeScreen'
+import { MapScreen } from './src/screens/MapScreen'
 import { OpportunitiesScreen } from './src/screens/OpportunitiesScreen'
 import { MarketplaceScreen } from './src/screens/MarketplaceScreen'
 import { SkillBuilderScreen } from './src/screens/SkillBuilderScreen'
@@ -109,6 +110,7 @@ function AppContent() {
 
   const navItems = [
     { id: 'home', label: t.navHome, icon: '🏠' },
+    { id: 'map', label: 'Map Radar', icon: '🧭' },
     { id: 'opportunities', label: t.navOpportunities, icon: '📈' },
     { id: 'marketplace', label: t.navMarketplace, icon: '🛍️' },
     { id: 'assistant', label: t.navMentorBot, icon: '🤖' },
@@ -175,6 +177,16 @@ function AppContent() {
                 currentUser={currentUser}
                 onNavigateTab={navigateToTab}
                 onOpenSkillBuilder={() => setShowSkillBuilder(true)}
+              />
+            )}
+
+            {activeTab === 'map' && (
+              <MapScreen
+                highContrast={highContrast}
+                fontSize={fontSize}
+                language={language}
+                currentUser={currentUser}
+                onNavigateTab={navigateToTab}
               />
             )}
 

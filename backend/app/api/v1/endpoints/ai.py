@@ -237,3 +237,32 @@ def autofill_from_video_endpoint(payload: VideoAutofillRequest):
         location=payload.location
     )
     return result
+
+
+class VideoDescriptionGenRequest(BaseModel):
+    title: str
+    transcript_or_notes: str
+    category: Optional[str] = "General"
+    language: Optional[str] = "English"
+
+@router.post("/video-description", summary="AI Video Description & Skill Generator")
+def video_description_endpoint(payload: VideoDescriptionGenRequest):
+    """
+    AI Video Description Generator:
+    Takes video title, notes or spoken transcript and suggests professional descriptions,
+    detected skills, years of experience, category, and keywords using Gemini AI.
+    Strictly anti-hallucinatory: only reflects content present in notes/transcript.
+    Always labeled 'AI-assisted — please review before publishing'.
+    """
+    if not payload.transcript_or_notes and not payload.title:
+        raise HTTPException(status_code=400, detail="Please provide a title or transcript/notes.")
+
+    from app.services.ai_service import generate_video_description_assist
+    res = generate_video_description_assist(
+        video_title=payload.title or "Skill Showcase Video",
+        raw_transcript_or_notes=payload.transcript_or_notes or payload.title,
+        category=payload.category,
+        language=payload.language or "English"
+    )
+    return res
+

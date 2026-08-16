@@ -2,7 +2,7 @@ import React from 'react'
 import {
   HeartHandshake, ShieldCheck, Store, Search, Wand2,
   Bot, LayoutDashboard, Type, Eye, LogIn, LogOut, Globe,
-  TrendingUp
+  TrendingUp, Compass, Bell
 } from 'lucide-react'
 import type { User } from '../types'
 import { api } from '../services/api'
@@ -20,6 +20,8 @@ interface HeaderProps {
   currentUser: User | null
   setCurrentUser: (user: User | null) => void
   onOpenAuth: () => void
+  onOpenNotifications?: () => void
+  unreadNotificationsCount?: number
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -33,18 +35,22 @@ export const Header: React.FC<HeaderProps> = ({
   setLanguage,
   currentUser,
   setCurrentUser,
-  onOpenAuth
+  onOpenAuth,
+  onOpenNotifications,
+  unreadNotificationsCount = 0
 }) => {
   const t = translations[language]
 
   const tabs = [
     { id: 'marketplace', label: t.navMarketplace, icon: Store },
+    { id: 'map', label: t.navMap || 'Live Map', icon: Compass },
     { id: 'opportunities', label: t.navOpportunities, icon: TrendingUp },
     { id: 'smart-match', label: t.navSmartMatch, icon: Search },
     { id: 'skill-builder', label: t.navSkillBuilder, icon: Wand2 },
     { id: 'mentor-bot', label: t.navMentorBot, icon: Bot },
     { id: 'dashboard', label: t.navDashboard, icon: LayoutDashboard },
   ]
+
 
   const handleFontSizeChange = (size: 'normal' | 'large' | 'xlarge') => {
     setFontSize(size)
@@ -184,8 +190,26 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* User Auth Status / Profile & Logout Button */}
+        {/* User Auth Status / Profile, Notifications & Logout Button */}
         <div className="flex items-center gap-3">
+          {/* Quiet Notifications Bell */}
+          <button
+            onClick={onOpenNotifications}
+            className={`relative p-2.5 rounded-xl border transition-all cursor-pointer ${
+              highContrast
+                ? 'bg-zinc-900 border-amber-400 text-amber-300 hover:bg-zinc-800'
+                : 'bg-slate-900/90 border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white'
+            }`}
+            title={t.notifications || 'Insights & Nudges'}
+          >
+            <Bell className="w-4 h-4" />
+            {unreadNotificationsCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white font-black text-[10px] rounded-full flex items-center justify-center animate-bounce">
+                {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+              </span>
+            )}
+          </button>
+
           {currentUser ? (
             <div className="flex items-center gap-2">
               <button

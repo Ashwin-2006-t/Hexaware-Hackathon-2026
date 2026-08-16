@@ -9,7 +9,13 @@ import type {
   ProfileBuilderResponse,
   BusinessGuidanceResponse,
   OpportunityFeedResponse,
-  OpportunityInterestResponse
+  OpportunityInterestResponse,
+  VideoItem,
+  NotificationItem,
+  OpportunityRecommendation,
+  MapResponse,
+  LocationSuggestion,
+  LocationAutocompleteResponse
 } from '../types'
 
 const API_BASE = 'http://localhost:8000/api/v1'
@@ -50,6 +56,9 @@ export const api = {
     age?: number
     phone?: string
     location_name?: string
+    latitude?: number
+    longitude?: number
+    service_radius?: number
     languages?: string
     bio?: string
   }): Promise<{ access_token: string; user: User }> {
@@ -501,5 +510,207 @@ export const api = {
       throw new Error(err.detail || 'AI autofill failed')
     }
     return res.json()
+  },
+
+  // Map & Geospatial Nearby Discovery
+  async getNearbyMapData(params: {
+    lat: number
+    lng: number
+    radius?: number
+    category?: string
+    search?: string
+    include_businesses?: boolean
+  }): Promise<MapResponse> {
+    const query = new URLSearchParams()
+    query.set('lat', params.lat.toString())
+    query.set('lng', params.lng.toString())
+    if (params.radius) query.set('radius', params.radius.toString())
+    if (params.category && params.category !== 'All') query.set('category', params.category)
+    if (params.search) query.set('search', params.search)
+    if (params.include_businesses !== undefined) query.set('include_businesses', params.include_businesses.toString())
+
+    const res = await fetch(`${API_BASE}/map/nearby?${query.toString()}`)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'Failed to fetch map data')
+    }
+    return res.json()
+  },
+
+  async updateLocation(data: {
+    latitude: number
+    longitude: number
+    location_name?: string
+    service_radius?: number
+  }): Promise<{ success: boolean; message: string; latitude: number; longitude: number; service_radius: number }> {
+    const res = await fetch(`${API_BASE}/location/update`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'Location update failed')
+    }
+    return res.json()
+  },
+
+  // Quiet Insight Notifications
+  async getNotifications(userId?: number): Promise<NotificationItem[]> {
+    const url = userId ? `${API_BASE}/notifications?user_id=${userId}` : `${API_BASE}/notifications`
+    const res = await fetch(url, {
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'Failed to load notifications')
+    }
+    return res.json()
+  },
+
+  async markNotificationRead(notificationId: number): Promise<{ success: boolean; id: number; read: boolean }> {
+    const res = await fetch(`${API_BASE}/notifications/${notificationId}/read`, {
+      method: 'PATCH',
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) throw new Error('Failed to mark notification as read')
+    return res.json()
+  },
+
+  async markAllNotificationsRead(userId?: number): Promise<{ success: boolean; message: string }> {
+    const url = userId ? `${API_BASE}/notifications/read-all?user_id=${userId}` : `${API_BASE}/notifications/read-all`
+    const res = await fetch(url, {
+      method: 'PATCH',
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) throw new Error('Failed to mark all notifications as read')
+    return res.json()
+  },
+
+  // Opportunity Improvement Engine
+  async getOpportunityRecommendations(providerId?: number): Promise<{
+    provider_id: number
+    provider_name: string
+    primary_category: string
+    current_radius_km: number
+    recommendations: OpportunityRecommendation[]
+    total: number
+  }> {
+    const url = providerId ? `${API_BASE}/opportunities/recommendations?provider_id=${providerId}` : `${API_BASE}/opportunities/recommendations`
+    const res = await fetch(url, {
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'Failed to fetch recommendations')
+    }
+    return res.json()
+  },
+
+  // Video Gallery & Management
+  async getProviderVideos(providerId: number): Promise<VideoItem[]> {
+    const res = await fetch(`${API_BASE}/providers/${providerId}/videos`, {
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'Failed to load provider videos')
+    }
+    return res.json()
+  },
+
+  async createProviderVideo(providerId: number, data: {
+    title: string
+    description?: string
+    category?: string
+    visibility?: 'public' | 'private'
+    url?: string
+    storage_path?: string
+    ai_generated?: boolean
+    duration_seconds?: number
+  }): Promise<VideoItem> {
+    const res = await fetch(`${API_BASE}/providers/${providerId}/videos`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'Video creation failed')
+    }
+    return res.json()
+  },
+
+  async updateVideoDetails(videoId: number, data: {
+    title?: string
+    description?: string
+    category?: string
+    visibility?: 'public' | 'private'
+    ai_generated?: boolean
+  }): Promise<VideoItem> {
+    const res = await fetch(`${API_BASE}/providers/videos/${videoId}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'Failed to update video details')
+    }
+    return res.json()
+  },
+
+  async deleteProviderVideo(videoId: number): Promise<{ status: string; message: string }> {
+    const res = await fetch(`${API_BASE}/providers/videos/${videoId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'Failed to delete video')
+    }
+    return res.json()
+  },
+
+  async generateAIVideoDescription(data: {
+    title: string
+    transcript_or_notes: string
+    category?: string
+    language?: string
+  }): Promise<{
+    success: boolean
+    ai_available: boolean
+    is_ai_assisted: boolean
+    ai_notice: string
+    title: string
+    suggested_description: string
+    category: string
+    detected_skills: string[]
+    keywords: string[]
+    suggested_experience_years: number
+  }> {
+    const res = await fetch(`${API_BASE}/ai/video-description`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'AI Video description generation failed')
+    }
+    return res.json()
+  },
+
+  // Location Geocoding Autocomplete
+  async getLocationAutocomplete(query: string, limit: number = 6): Promise<LocationSuggestion[]> {
+    if (!query || query.trim().length < 2) return []
+    const res = await fetch(`${API_BASE}/map/autocomplete?q=${encodeURIComponent(query.trim())}&limit=${limit}`, {
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) return []
+    const data: LocationAutocompleteResponse = await res.json()
+    return data.suggestions || []
   }
 }
+
+

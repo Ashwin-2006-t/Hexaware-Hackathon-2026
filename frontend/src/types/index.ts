@@ -16,6 +16,7 @@ export interface User {
   longitude?: number
   languages?: string
   availability?: string
+  service_radius?: number
   is_published?: boolean
   is_active?: boolean
   rating?: number
@@ -296,4 +297,115 @@ export interface ProfileMedia {
   file_size_bytes?: number
   created_at: string
 }
+
+export interface VideoItem {
+  id: number
+  provider_id: number
+  storage_path?: string
+  url: string
+  title: string
+  description?: string
+  visibility: 'public' | 'private'
+  category: string
+  ai_generated: boolean
+  duration_seconds?: number
+  created_at: string
+  updated_at?: string
+}
+
+export interface NotificationItem {
+  id: number
+  user_id: number
+  type: 'opportunity' | 'expansion' | 'profile' | 'availability' | 'pricing' | 'work_sample' | 'interest'
+  title: string
+  message: string
+  action?: 'radius_settings' | 'video_upload' | 'profile_editor' | 'availability' | 'opportunity_engine' | 'map' | 'view_opportunity' | string
+  action_payload?: string
+  read: boolean
+  created_at: string
+}
+
+export interface OpportunityRecommendation {
+  id: string
+  category: string
+  title: string
+  why_shown: string
+  action_type: 'radius_settings' | 'video_upload' | 'profile_editor' | 'availability' | 'opportunity_engine' | 'map' | string
+  action_label: string
+  action_payload: any
+  impact_badge: string
+  priority: 'high' | 'medium' | 'low'
+  icon?: string
+}
+
+export interface MapItem {
+  id: string | number
+  marker_type: 'silverhands_provider' | 'silverhands_opportunity' | 'real_business' | 'current_location'
+  is_silverhands: boolean
+  label: string
+  badge?: string
+  name?: string
+  title?: string
+  user_type?: 'senior' | 'homemaker' | 'customer'
+  category: string
+  sub_type?: string
+  bio?: string
+  description?: string
+  avatar_url?: string
+  video_intro_url?: string
+  rating?: number
+  review_count?: number
+  hourly_rate?: number
+  budget_range?: string
+  customer_location?: string
+  location_name?: string
+  address?: string
+  latitude: number
+  longitude: number
+  distance_km: number
+  service_radius?: number
+  availability?: string
+  trust_badge_level?: string
+  skills?: any[]
+  phone?: string
+  website?: string
+  opening_hours?: string
+  source?: string
+}
+
+export interface MapResponse {
+  center: {
+    latitude: number
+    longitude: number
+  }
+  radius_km: number
+  category: string
+  search: string
+  counts: {
+    total: number
+    providers: number
+    opportunities: number
+    real_businesses: number
+  }
+  items: MapItem[]
+}
+
+export interface LocationSuggestion {
+  display_name: string
+  formatted_address: string
+  city: string
+  state: string
+  country: string
+  latitude: number
+  longitude: number
+  source?: string
+}
+
+export interface LocationAutocompleteResponse {
+  query: string
+  total: number
+  suggestions: LocationSuggestion[]
+}
+
+
 

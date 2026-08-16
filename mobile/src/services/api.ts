@@ -9,7 +9,12 @@ import type {
   OpportunityFeedResponse,
   OpportunityInterestResponse,
   SmartMatchResponse,
-  AssistantChatResponse
+  AssistantChatResponse,
+  VideoItem,
+  NotificationItem,
+  OpportunityRecommendation,
+  MapResponse,
+  LocationSuggestion
 } from '../types'
 import { StorageService } from './storage'
 
@@ -295,5 +300,147 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(profileData)
     })
+  },
+
+  // Map & Geospatial Nearby Discovery
+  async getNearbyMapData(params: {
+    lat: number
+    lng: number
+    radius?: number
+    category?: string
+    search?: string
+    include_businesses?: boolean
+  }): Promise<MapResponse> {
+    const query = new URLSearchParams()
+    query.set('lat', params.lat.toString())
+    query.set('lng', params.lng.toString())
+    if (params.radius) query.set('radius', params.radius.toString())
+    if (params.category && params.category !== 'All') query.set('category', params.category)
+    if (params.search) query.set('search', params.search)
+    if (params.include_businesses !== undefined) query.set('include_businesses', params.include_businesses.toString())
+
+    return request(`/map/nearby?${query.toString()}`)
+  },
+
+  async updateLocation(data: {
+    latitude: number
+    longitude: number
+    location_name?: string
+    service_radius?: number
+  }): Promise<{ success: boolean; message: string; latitude: number; longitude: number; service_radius: number }> {
+    return request('/location/update', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  },
+
+  // Quiet Insight Notifications
+  async getNotifications(userId?: number): Promise<NotificationItem[]> {
+    const url = userId ? `/notifications?user_id=${userId}` : '/notifications'
+    return request(url)
+  },
+
+  async markNotificationRead(notificationId: number): Promise<{ success: boolean; id: number; read: boolean }> {
+    return request(`/notifications/${notificationId}/read`, {
+      method: 'PATCH'
+    })
+  },
+
+  async markAllNotificationsRead(userId?: number): Promise<{ success: boolean; message: string }> {
+    const url = userId ? `/notifications/read-all?user_id=${userId}` : '/notifications/read-all'
+    return request(url, {
+      method: 'PATCH'
+    })
+  },
+
+  // Opportunity Improvement Engine
+  async getOpportunityRecommendations(providerId?: number): Promise<{
+    provider_id: number
+    provider_name: string
+    primary_category: string
+    current_radius_km: number
+    recommendations: OpportunityRecommendation[]
+    total: number
+  }> {
+    const url = providerId ? `/opportunities/recommendations?provider_id=${providerId}` : '/opportunities/recommendations'
+    return request(url)
+  },
+
+  // Video Gallery & Management
+  async getProviderVideos(providerId: number): Promise<VideoItem[]> {
+    return request(`/providers/${providerId}/videos`)
+  },
+
+  async createProviderVideo(providerId: number, data: {
+    title: string
+    description?: string
+    category?: string
+    visibility?: 'public' | 'private'
+    url?: string
+    storage_path?: string
+    ai_generated?: boolean
+    duration_seconds?: number
+  }): Promise<VideoItem> {
+    return request(`/providers/${providerId}/videos`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  },
+
+  async updateVideoDetails(videoId: number, data: {
+    title?: string
+    description?: string
+    category?: string
+    visibility?: 'public' | 'private'
+    ai_generated?: boolean
+  }): Promise<VideoItem> {
+    return request(`/providers/videos/${videoId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    })
+  },
+
+  async deleteProviderVideo(videoId: number): Promise<{ status: string; message: string }> {
+    return request(`/providers/videos/${videoId}`, {
+      method: 'DELETE'
+    })
+  },
+
+  async generateAIVideoDescription(data: {
+    title: string
+    transcript_or_notes: string
+    category?: string
+    language?: string
+  }): Promise<{
+    success: boolean
+    ai_available: boolean
+    is_ai_assisted: boolean
+    ai_notice: string
+    title: string
+    suggested_description: string
+    category: string
+    detected_skills: string[]
+    keywords: string[]
+    suggested_experience_years: number
+  }> {
+    return request('/ai/video-description', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  },
+
+  // Location Geocoding Autocomplete
+  async getLocationAutocomplete(query: string, limit: number = 6): Promise<LocationSuggestion[]> {
+    if (!query || query.trim().length < 2) return []
+    try {
+      const data = await request<{ query: string; total: number; suggestions: LocationSuggestion[] }>(
+        `/map/autocomplete?q=${encodeURIComponent(query.trim())}&limit=${limit}`
+      )
+      return data.suggestions || []
+    } catch {
+      return []
+    }
   }
 }
+
+

@@ -3,12 +3,14 @@ import {
   Calendar, ShieldCheck, Star, Upload, CheckCircle2,
   TrendingUp, Sparkles, Lightbulb,
   Edit3, Trash2, Plus, Briefcase, Check, Award,
-  Video, Image, Play, RotateCcw
+  Video, Image, Play, RotateCcw, Lock, Unlock,
+  Mic, Volume2, MapPin, ChevronRight, X
 } from 'lucide-react'
-import type { Booking, User, ServiceListing, OpportunityItem, SkillPassportResponse, WorkSample } from '../types'
+import type { Booking, User, ServiceListing, OpportunityItem, SkillPassportResponse, WorkSample, VideoItem, OpportunityRecommendation } from '../types'
 import { api } from '../services/api'
 import { formatINR } from '../utils/formatters'
 import { translations, type Language } from '../i18n/translations'
+import { LocationAutocomplete } from './LocationAutocomplete'
 
 interface DashboardProps {
   highContrast: boolean
@@ -20,13 +22,16 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser, setCurrentUser, language = 'en' }) => {
   const t = translations[language]
 
-  const [activeTab, setActiveTab] = useState<'opportunities' | 'bookings' | 'services' | 'passport' | 'samples'>('opportunities')
+  const [activeTab, setActiveTab] = useState<'opportunities' | 'recommendations' | 'videos' | 'bookings' | 'services' | 'passport' | 'samples'>('opportunities')
   const [bookings, setBookings] = useState<Booking[]>([])
   const [services, setServices] = useState<ServiceListing[]>([])
   const [opportunities, setOpportunities] = useState<OpportunityItem[]>([])
   const [passportData, setPassportData] = useState<SkillPassportResponse | null>(null)
   const [workSamples, setWorkSamples] = useState<WorkSample[]>([])
+  const [videos, setVideos] = useState<VideoItem[]>([])
+  const [recommendations, setRecommendations] = useState<OpportunityRecommendation[]>([])
   const [applyingOppId, setApplyingOppId] = useState<string | null>(null)
+
 
   // Avatar Upload State
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -58,6 +63,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
   const [editPhone, setEditPhone] = useState<string>(currentUser?.phone || '')
   const [editBio, setEditBio] = useState<string>(currentUser?.bio || '')
   const [editLocation, setEditLocation] = useState<string>(currentUser?.location_name || '')
+  const [editLatitude, setEditLatitude] = useState<number | undefined>(currentUser?.latitude)
+  const [editLongitude, setEditLongitude] = useState<number | undefined>(currentUser?.longitude)
   const [editLanguages, setEditLanguages] = useState<string>(currentUser?.languages || '')
   const [editAvailability, setEditAvailability] = useState<string>(currentUser?.availability || '')
   const [profileSaving, setProfileSaving] = useState<boolean>(false)
@@ -76,23 +83,48 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
   const [comment, setComment] = useState<string>('Wonderful senior experience! Highly recommended.')
   const [reviewSubmitting, setReviewSubmitting] = useState<boolean>(false)
 
+  // Dedicated Video Gallery & Management State
+  const [showVideoModal, setShowVideoModal] = useState<boolean>(false)
+  const [videoTitle, setVideoTitle] = useState<string>('')
+  const [videoCat, setVideoCat] = useState<string>('Cooking & Tiffin')
+  const [videoDesc, setVideoDesc] = useState<string>('')
+  const [videoVisibility, setVideoVisibility] = useState<'public' | 'private'>('public')
+  const [videoUrl, setVideoUrl] = useState<string>('https://assets.mixkit.co/videos/preview/mixkit-hands-of-a-woman-cutting-vegetables-40915-large.mp4')
+  const [videoSaving, setVideoSaving] = useState<boolean>(false)
+  const [aiGeneratingDesc, setAiGeneratingDesc] = useState<boolean>(false)
+  const [aiVideoNotice, setAiVideoNotice] = useState<string | null>(null)
+  const [speechLang, setSpeechLang] = useState<'en-IN' | 'ta-IN' | 'hi-IN'>('en-IN')
+  const [isListeningSpeech, setIsListeningSpeech] = useState<boolean>(false)
+  const [isPlayingTTS, setIsPlayingTTS] = useState<boolean>(false)
+  const [editingVideo, setEditingVideo] = useState<VideoItem | null>(null)
+  const [playingVideoUrl, setPlayingVideoUrl] = useState<string | null>(null)
+
+  // Service Radius Modal State
+  const [showRadiusModal, setShowRadiusModal] = useState<boolean>(false)
+  const [editRadius, setEditRadius] = useState<number>(currentUser?.service_radius || 10)
+  const [radiusSaving, setRadiusSaving] = useState<boolean>(false)
+
   const defaultAvatar = "/avatars/seed/lakshmi_amma.jpg"
 
   const loadDashboardData = async () => {
     const userId = currentUser?.id || 1
     try {
-      const [bookingsData, servicesData, oppsData, passport, samples] = await Promise.all([
+      const [bookingsData, servicesData, oppsData, passport, samples, videosData, recsData] = await Promise.all([
         api.getUserBookings(userId).catch(() => []),
         api.getServices().catch(() => []),
         api.getProviderOpportunities(userId).catch(() => ({ provider_id: userId, opportunities: [], total: 0 })),
         api.getSkillPassport(userId).catch(() => null),
-        api.getWorkSamples(userId).catch(() => [])
+        api.getWorkSamples(userId).catch(() => []),
+        api.getProviderVideos(userId).catch(() => []),
+        api.getOpportunityRecommendations(userId).catch(() => ({ recommendations: [] }))
       ])
       setBookings(bookingsData)
       setServices(servicesData.filter((s) => s.provider_id === userId))
       setOpportunities(oppsData.opportunities || [])
       setPassportData(passport)
       setWorkSamples(samples)
+      setVideos(videosData)
+      setRecommendations(recsData.recommendations || [])
     } catch (err: any) {
       console.error(err)
     }
@@ -101,6 +133,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
   useEffect(() => {
     loadDashboardData()
   }, [currentUser])
+
 
   // Profile completion calculation
   const getProfileCompleteness = () => {
@@ -290,12 +323,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
         phone: editPhone,
         bio: editBio,
         location_name: editLocation,
+        latitude: editLatitude,
+        longitude: editLongitude,
         languages: editLanguages,
         availability: editAvailability
       })
       setCurrentUser(updated)
       setShowEditProfile(false)
-      alert('Profile updated successfully!')
+      loadDashboardData()
+      alert('Profile & live location coordinates updated successfully!')
     } catch (err: any) {
       alert(`Profile update error: ${err.message}`)
     } finally {
@@ -409,6 +445,171 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
       setReviewSubmitting(false)
     }
   }
+
+  // Video Management Handlers
+  const handleSaveVideo = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!videoTitle.trim()) {
+      alert('Please enter a title for your video demo.')
+      return
+    }
+    setVideoSaving(true)
+    try {
+      if (editingVideo) {
+        // Edit existing video
+        await api.updateVideoDetails(editingVideo.id, {
+          title: videoTitle,
+          description: videoDesc,
+          category: videoCat,
+          visibility: videoVisibility
+        })
+        alert('Video details updated successfully!')
+      } else {
+        // Create new video
+        await api.createProviderVideo(currentUser?.id || 1, {
+          title: videoTitle,
+          description: videoDesc,
+          category: videoCat,
+          visibility: videoVisibility,
+          url: videoUrl,
+          duration_seconds: 45
+        })
+        alert('Video demo published to your showcase gallery!')
+      }
+      setShowVideoModal(false)
+      setEditingVideo(null)
+      setVideoTitle('')
+      setVideoDesc('')
+      setAiVideoNotice(null)
+      loadDashboardData()
+    } catch (err: any) {
+      alert(`Video save error: ${err.message}`)
+    } finally {
+      setVideoSaving(false)
+    }
+  }
+
+  const handleDeleteVideo = async (video: VideoItem) => {
+    if (!confirm(t.confirmDelete || 'Are you sure you want to permanently delete this video?')) return
+    try {
+      await api.deleteProviderVideo(video.id)
+      setVideos(prev => prev.filter(v => v.id !== video.id))
+      alert('Video removed from storage and database.')
+    } catch (err: any) {
+      alert(`Delete Error: ${err.message}`)
+    }
+  }
+
+  const handleToggleVideoVisibility = async (video: VideoItem) => {
+    const nextVisibility = video.visibility === 'public' ? 'private' : 'public'
+    try {
+      const updated = await api.updateVideoDetails(video.id, { visibility: nextVisibility })
+      setVideos(prev => prev.map(v => v.id === video.id ? { ...v, visibility: updated.visibility } : v))
+    } catch (err: any) {
+      alert(`Visibility update error: ${err.message}`)
+    }
+  }
+
+  // Voice AI: Speech-to-Text (STT) into Video Description
+  const handleStartVoiceSTT = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      alert(t.voiceUnsupported || 'Voice input is not supported in this browser. Please type directly.')
+      return
+    }
+
+    try {
+      const recognition = new SpeechRecognition()
+      recognition.lang = speechLang
+      recognition.continuous = false
+      recognition.interimResults = false
+
+      recognition.onstart = () => setIsListeningSpeech(true)
+      recognition.onend = () => setIsListeningSpeech(false)
+      recognition.onerror = () => setIsListeningSpeech(false)
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript
+        setVideoDesc(prev => (prev ? `${prev} ${transcript}` : transcript))
+      }
+
+      recognition.start()
+    } catch (err) {
+      console.warn('Voice STT error:', err)
+      setIsListeningSpeech(false)
+    }
+  }
+
+  // Voice AI: Text-to-Speech (TTS) for Description
+  const handlePlayTTS = (textToPlay: string) => {
+    if (!('speechSynthesis' in window)) {
+      alert('Text-to-speech is not supported in this browser.')
+      return
+    }
+
+    if (isPlayingTTS) {
+      window.speechSynthesis.cancel()
+      setIsPlayingTTS(false)
+      return
+    }
+
+    const utterance = new SpeechSynthesisUtterance(textToPlay)
+    utterance.lang = speechLang
+    utterance.onend = () => setIsPlayingTTS(false)
+    utterance.onerror = () => setIsPlayingTTS(false)
+
+    setIsPlayingTTS(true)
+    window.speechSynthesis.speak(utterance)
+  }
+
+  // Gemini AI Video Description Generator
+  const handleGenerateAIVideoDesc = async () => {
+    if (!videoTitle && !videoDesc) {
+      alert('Please enter a video title or brief spoken notes first.')
+      return
+    }
+
+    setAiGeneratingDesc(true)
+    try {
+      const res = await api.generateAIVideoDescription({
+        title: videoTitle || 'Craft Demonstration',
+        transcript_or_notes: videoDesc || videoTitle,
+        category: videoCat,
+        language: speechLang === 'ta-IN' ? 'Tamil' : speechLang === 'hi-IN' ? 'Hindi' : 'English'
+      })
+
+      setVideoDesc(res.suggested_description)
+      setVideoCat(res.category || videoCat)
+      setAiVideoNotice(res.ai_notice || 'AI-assisted — please review before publishing')
+    } catch (err: any) {
+      alert(`AI Generation Notice: ${err.message}`)
+    } finally {
+      setAiGeneratingDesc(false)
+    }
+  }
+
+  // Service Radius Update
+  const handleSaveServiceRadius = async () => {
+    setRadiusSaving(true)
+    try {
+      await api.updateLocation({
+        latitude: currentUser?.latitude || 19.0760,
+        longitude: currentUser?.longitude || 72.8777,
+        service_radius: editRadius
+      })
+      if (currentUser) {
+        setCurrentUser({ ...currentUser, service_radius: editRadius })
+      }
+      setShowRadiusModal(false)
+      loadDashboardData()
+      alert(`Service radius updated to ${editRadius} km!`)
+    } catch (err: any) {
+      alert(`Radius update error: ${err.message}`)
+    } finally {
+      setRadiusSaving(false)
+    }
+  }
+
 
   const totalEarned = bookings
     .filter((b) => b.status === 'completed')
@@ -704,10 +905,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
       </div>
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-        <div className="flex items-center gap-2 overflow-x-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-2">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
           {[
             { id: 'opportunities', label: `${t.navOpportunities} (${opportunities.length})`, icon: TrendingUp },
+            { id: 'recommendations', label: `Opportunity Engine (${recommendations.length})`, icon: Sparkles },
+            { id: 'videos', label: `${t.myVideos || 'My Videos'} (${videos.length})`, icon: Video },
             { id: 'passport', label: 'Skill Passport', icon: Award },
             { id: 'samples', label: `Work Samples (${workSamples.length})`, icon: Image },
             { id: 'bookings', label: `${t.navBookings} (${bookings.length})`, icon: Calendar },
@@ -719,7 +922,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`px-3.5 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
+                className={`px-3.5 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                   isActive
                     ? 'bg-[#4B32E6] text-white shadow-sm'
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
@@ -732,26 +935,55 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
           })}
         </div>
 
-        {activeTab === 'services' && (
-          <button
-            onClick={() => setShowServiceModal(true)}
-            className="bg-[#4B32E6] hover:bg-[#3D26D1] text-white text-xs py-2 px-3.5 rounded-xl shadow-sm font-bold flex items-center gap-1.5 cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Create New Service</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {activeTab === 'videos' && (
+            <button
+              onClick={() => {
+                setEditingVideo(null)
+                setVideoTitle('')
+                setVideoDesc('')
+                setAiVideoNotice(null)
+                setShowVideoModal(true)
+              }}
+              className="bg-[#4B32E6] hover:bg-[#3D26D1] text-white text-xs py-2 px-3.5 rounded-xl shadow-sm font-bold flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>{t.uploadVideo || 'Upload Video Demo'}</span>
+            </button>
+          )}
 
-        {activeTab === 'samples' && (
-          <button
-            onClick={() => setShowSampleModal(true)}
-            className="bg-[#4B32E6] hover:bg-[#3D26D1] text-white text-xs py-2 px-3.5 rounded-xl shadow-sm font-bold flex items-center gap-1.5 cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add Work Sample</span>
-          </button>
-        )}
+          {activeTab === 'recommendations' && (
+            <button
+              onClick={() => setShowRadiusModal(true)}
+              className="bg-[#0A0F24] hover:bg-[#131838] text-white text-xs py-2 px-3.5 rounded-xl shadow-sm font-bold flex items-center gap-1.5 cursor-pointer"
+            >
+              <MapPin className="w-3.5 h-3.5 text-[#4099FF]" />
+              <span>Adjust Radius ({currentUser?.service_radius || 10} km)</span>
+            </button>
+          )}
+
+          {activeTab === 'services' && (
+            <button
+              onClick={() => setShowServiceModal(true)}
+              className="bg-[#4B32E6] hover:bg-[#3D26D1] text-white text-xs py-2 px-3.5 rounded-xl shadow-sm font-bold flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Create New Service</span>
+            </button>
+          )}
+
+          {activeTab === 'samples' && (
+            <button
+              onClick={() => setShowSampleModal(true)}
+              className="bg-[#4B32E6] hover:bg-[#3D26D1] text-white text-xs py-2 px-3.5 rounded-xl shadow-sm font-bold flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Work Sample</span>
+            </button>
+          )}
+        </div>
       </div>
+
 
       {/* TAB 1: RECOMMENDED OPPORTUNITIES */}
       {activeTab === 'opportunities' && (
@@ -826,6 +1058,262 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* TAB: OPPORTUNITY IMPROVEMENT ENGINE */}
+      {activeTab === 'recommendations' && (
+        <div className="space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-[#0A0F24] to-[#131838] p-5 md:p-6 rounded-2xl text-white shadow-md">
+            <div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-[#4099FF]" />
+                <h3 className="text-lg md:text-xl font-black">{t.opportunityEngine || 'Opportunity Improvement Engine'}</h3>
+              </div>
+              <p className="text-xs text-slate-300 mt-1 max-w-xl">
+                Practical, grounded nudges tailored to your profile, real neighborhood demand, and local pricing in your area.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold bg-[#4B32E6] px-3 py-1.5 rounded-xl border border-[#4099FF]/40 text-white">
+                Current Radius: {currentUser?.service_radius || 10} km
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {recommendations.map((rec) => (
+              <div
+                key={rec.id}
+                className={`p-5 rounded-2xl border shadow-sm flex flex-col justify-between space-y-4 transition-all ${
+                  highContrast ? 'bg-black border-2 border-amber-400 text-white' : 'bg-white border-slate-200 text-slate-900'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-blue-50 text-[#4B32E6] border border-blue-100 px-2 py-0.5 rounded-md">
+                      {rec.category}
+                    </span>
+                    <span className="text-[11px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                      {rec.impact_badge}
+                    </span>
+                  </div>
+
+                  <h4 className="text-base font-bold text-slate-900 leading-snug">
+                    {rec.title}
+                  </h4>
+
+                  <div className="mt-2.5 p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-600 space-y-1">
+                    <span className="font-bold text-slate-700 block text-[11px] uppercase tracking-wider">
+                      Why this is recommended:
+                    </span>
+                    <p className="leading-relaxed">
+                      {rec.why_shown}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[11px] text-slate-400 font-semibold capitalize">
+                    Priority: <strong className={rec.priority === 'high' ? 'text-rose-600' : 'text-amber-600'}>{rec.priority}</strong>
+                  </span>
+
+                  <button
+                    onClick={() => {
+                      if (rec.action_type === 'radius_settings') {
+                        setShowRadiusModal(true)
+                      } else if (rec.action_type === 'video_upload') {
+                        setActiveTab('videos')
+                        setShowVideoModal(true)
+                      } else if (rec.action_type === 'profile_editor' || rec.action_type === 'availability') {
+                        setShowEditProfile(true)
+                      } else if (rec.action_type === 'pricing') {
+                        setShowServiceModal(true)
+                      } else if (rec.action_type === 'express_interest') {
+                        handleExpressInterest(rec.action_payload?.opportunity_id || 'opp_cooking_01')
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-[#4B32E6] hover:bg-[#3D26D1] text-white shadow-xs cursor-pointer transition-all"
+                  >
+                    <span>{rec.action_label}</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#4099FF]" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* TAB: MY SHOWCASE VIDEOS & DEMONSTRATIONS */}
+      {activeTab === 'videos' && (
+        <div className="space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 md:p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
+            <div>
+              <h3 className="text-lg md:text-xl font-black text-slate-900">{t.myVideos || 'My Showcase Videos'}</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Upload short 30-45s demonstrations of your skills with AI speech assist and public/private visibility control.
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                setEditingVideo(null)
+                setVideoTitle('')
+                setVideoDesc('')
+                setAiVideoNotice(null)
+                setShowVideoModal(true)
+              }}
+              className="bg-[#4B32E6] hover:bg-[#3D26D1] text-white text-xs py-2.5 px-4 rounded-xl font-bold flex items-center gap-2 shadow-sm cursor-pointer transition-all shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{t.uploadVideo || 'Upload Video Demo'}</span>
+            </button>
+          </div>
+
+          {videos.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {videos.map((video) => (
+                <div
+                  key={video.id}
+                  className={`rounded-2xl border overflow-hidden shadow-sm flex flex-col justify-between transition-all ${
+                    highContrast ? 'bg-black border-2 border-amber-400 text-white' : 'bg-white border-slate-200 text-slate-900'
+                  }`}
+                >
+                  {/* Video Thumbnail & Play Overlay */}
+                  <div className="relative aspect-video bg-slate-900 group cursor-pointer overflow-hidden" onClick={() => setPlayingVideoUrl(video.url)}>
+                    <video
+                      src={video.url}
+                      className="w-full h-full object-cover opacity-85 group-hover:scale-105 transition-transform duration-300"
+                      preload="metadata"
+                    />
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/20 transition-all">
+                      <div className="w-11 h-11 rounded-full bg-white/90 text-[#4B32E6] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <Play className="w-5 h-5 fill-[#4B32E6] ml-0.5" />
+                      </div>
+                    </div>
+
+                    {/* Visibility Badge */}
+                    <div className="absolute top-2.5 left-2.5">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider backdrop-blur-md shadow-xs ${
+                        video.visibility === 'public'
+                          ? 'bg-emerald-600/90 text-white'
+                          : 'bg-zinc-800/90 text-amber-300 border border-amber-400/40'
+                      }`}>
+                        {video.visibility === 'public' ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                        {video.visibility === 'public' ? (t.publicVisibility || 'Public') : (t.privateVisibility || 'Private')}
+                      </span>
+                    </div>
+
+                    {/* Duration Badge */}
+                    <div className="absolute bottom-2.5 right-2.5 bg-black/80 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-xs">
+                      {video.duration_seconds || 45}s
+                    </div>
+                  </div>
+
+                  {/* Video Details Card Content */}
+                  <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="text-[10px] font-bold text-[#4B32E6] bg-blue-50 px-2 py-0.5 rounded">
+                          {video.category}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {new Date(video.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      <h4 className="text-sm font-black text-slate-900 leading-snug">
+                        {video.title}
+                      </h4>
+
+                      {video.description && (
+                        <p className="text-xs text-slate-600 mt-1.5 line-clamp-3 leading-relaxed">
+                          {video.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Action Bar */}
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                      {/* Listen TTS Button */}
+                      {video.description && (
+                        <button
+                          onClick={() => handlePlayTTS(video.description || '')}
+                          className="p-1.5 rounded-lg text-slate-600 hover:text-[#4B32E6] hover:bg-slate-100 cursor-pointer"
+                          title={t.listenDescription || 'Listen to description'}
+                        >
+                          <Volume2 className="w-4 h-4 text-[#4099FF]" />
+                        </button>
+                      )}
+
+                      {/* Visibility Toggle Button */}
+                      <button
+                        onClick={() => handleToggleVideoVisibility(video)}
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border cursor-pointer transition-colors ${
+                          video.visibility === 'public'
+                            ? 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                            : 'bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100'
+                        }`}
+                        title="Click to toggle visibility"
+                      >
+                        {video.visibility === 'public' ? 'Make Private' : 'Make Public'}
+                      </button>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => {
+                            setEditingVideo(video)
+                            setVideoTitle(video.title)
+                            setVideoCat(video.category)
+                            setVideoDesc(video.description || '')
+                            setVideoVisibility(video.visibility)
+                            setVideoUrl(video.url)
+                            setShowVideoModal(true)
+                          }}
+                          className="p-1.5 rounded-lg text-slate-600 hover:text-[#4B32E6] hover:bg-slate-100 cursor-pointer"
+                          title="Edit details"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteVideo(video)}
+                          className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 cursor-pointer"
+                          title="Delete video"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16 p-8 bg-white rounded-2xl border border-slate-200 space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#4B32E6] mx-auto flex items-center justify-center">
+                <Video className="w-6 h-6" />
+              </div>
+              <h4 className="text-base font-bold text-slate-800">No Showcase Videos Yet</h4>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                {t.noVideos || 'Upload a short 30-second craft or cooking demo to boost your inquiry rate by 3x!'}
+              </p>
+              <button
+                onClick={() => {
+                  setEditingVideo(null)
+                  setVideoTitle('')
+                  setVideoDesc('')
+                  setAiVideoNotice(null)
+                  setShowVideoModal(true)
+                }}
+                className="btn-large bg-[#4B32E6] text-white hover:bg-[#3D26D1] text-xs font-bold py-2 px-4 inline-flex items-center gap-2 cursor-pointer mt-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Upload First Video Demo</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -1236,12 +1724,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Neighborhood / City</label>
-                <input
-                  type="text"
+                <LocationAutocomplete
                   value={editLocation}
-                  onChange={(e) => setEditLocation(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium"
+                  initialLatitude={editLatitude}
+                  initialLongitude={editLongitude}
+                  onLocationChange={(loc) => {
+                    setEditLocation(loc.locationName)
+                    setEditLatitude(loc.latitude)
+                    setEditLongitude(loc.longitude)
+                  }}
+                  highContrast={highContrast}
+                  language={language}
+                  label="Neighborhood / City Location"
+                  required
                 />
               </div>
 
@@ -1429,6 +1924,328 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
           </div>
         </div>
       )}
+
+      {/* Video Upload / Edit Modal */}
+      {showVideoModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="max-w-xl w-full p-6 md:p-7 space-y-4 rounded-2xl bg-white text-slate-900 border border-slate-200 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#4B32E6] flex items-center justify-center">
+                  <Video className="w-4 h-4" />
+                </div>
+                <h3 className="text-lg font-black text-slate-900">
+                  {editingVideo ? 'Edit Showcase Video' : (t.uploadVideo || 'Upload Video Demo')}
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowVideoModal(false)
+                  setEditingVideo(null)
+                  if (isPlayingTTS) {
+                    window.speechSynthesis.cancel()
+                    setIsPlayingTTS(false)
+                  }
+                }}
+                className="text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveVideo} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Demo Title</label>
+                <input
+                  type="text"
+                  required
+                  value={videoTitle}
+                  onChange={(e) => setVideoTitle(e.target.value)}
+                  placeholder="e.g. Sambar Tadka & Stone Ground Masala Demo"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-semibold"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Category</label>
+                  <select
+                    value={videoCat}
+                    onChange={(e) => setVideoCat(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium"
+                  >
+                    <option value="Cooking & Tiffin">Cooking & Tiffin</option>
+                    <option value="Tutoring & Mentoring">Tuition & Mentoring</option>
+                    <option value="Crafts & Tailoring">Saree Tailoring & Crafts</option>
+                    <option value="Gardening & Agriculture">Terrace Kitchen Garden</option>
+                    <option value="Consulting & Life Mentoring">Consulting & Life Mentoring</option>
+                    <option value="Home Maintenance">Home Maintenance</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Visibility Level</label>
+                  <select
+                    value={videoVisibility}
+                    onChange={(e) => setVideoVisibility(e.target.value as any)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-semibold"
+                  >
+                    <option value="public">🟢 Public (All Clients & Map)</option>
+                    <option value="private">🔒 Private (Draft Only)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Video Clip Stream / File URL</label>
+                <input
+                  type="url"
+                  required
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  placeholder="https://assets.mixkit.co/videos/..."
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium"
+                />
+                <div className="flex flex-wrap gap-1.5 mt-1.5 text-[10px]">
+                  <span className="text-slate-400 font-semibold">Quick Samples:</span>
+                  <button
+                    type="button"
+                    onClick={() => setVideoUrl('https://assets.mixkit.co/videos/preview/mixkit-hands-of-a-woman-cutting-vegetables-40915-large.mp4')}
+                    className="text-[#4B32E6] hover:underline font-bold"
+                  >
+                    Cooking Clip
+                  </button>
+                  <span>•</span>
+                  <button
+                    type="button"
+                    onClick={() => setVideoUrl('https://assets.mixkit.co/videos/preview/mixkit-hands-sewing-a-fabric-with-a-machine-42403-large.mp4')}
+                    className="text-[#4B32E6] hover:underline font-bold"
+                  >
+                    Tailoring Clip
+                  </button>
+                  <span>•</span>
+                  <button
+                    type="button"
+                    onClick={() => setVideoUrl('https://assets.mixkit.co/videos/preview/mixkit-hands-holding-and-showing-a-plant-sprout-41584-large.mp4')}
+                    className="text-[#4B32E6] hover:underline font-bold"
+                  >
+                    Gardening Clip
+                  </button>
+                </div>
+              </div>
+
+              {/* Description with Voice STT, TTS and Gemini AI Assist */}
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="font-bold text-slate-700">Video Description & Demonstration Notes</label>
+
+                  {/* Speech Language Selector */}
+                  <div className="flex items-center gap-1.5 bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
+                    <span className="text-[10px] text-slate-500 font-semibold">Voice Lang:</span>
+                    <select
+                      value={speechLang}
+                      onChange={(e) => setSpeechLang(e.target.value as any)}
+                      className="text-[10px] font-bold text-[#4B32E6] bg-transparent border-0 focus:ring-0 cursor-pointer"
+                    >
+                      <option value="en-IN">English (India)</option>
+                      <option value="ta-IN">Tamil (தமிழ்)</option>
+                      <option value="hi-IN">Hindi (हिंदी)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <textarea
+                    rows={3}
+                    value={videoDesc}
+                    onChange={(e) => setVideoDesc(e.target.value)}
+                    placeholder="Speak into mic or type your description here..."
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-[#4B32E6] focus:outline-none"
+                  />
+
+                  {/* Voice Controls floating in textarea */}
+                  <div className="absolute right-2.5 bottom-2.5 flex items-center gap-1.5 bg-white/95 px-2 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                    {/* Mic STT Button */}
+                    <button
+                      type="button"
+                      onClick={handleStartVoiceSTT}
+                      className={`p-1 rounded-md cursor-pointer transition-colors ${
+                        isListeningSpeech
+                          ? 'bg-rose-500 text-white animate-pulse'
+                          : 'text-slate-600 hover:text-[#4B32E6] hover:bg-slate-100'
+                      }`}
+                      title={isListeningSpeech ? 'Listening...' : 'Speak to input text'}
+                    >
+                      <Mic className="w-3.5 h-3.5" />
+                    </button>
+
+                    {/* TTS Listen Button */}
+                    <button
+                      type="button"
+                      onClick={() => handlePlayTTS(videoDesc || videoTitle)}
+                      disabled={!videoDesc && !videoTitle}
+                      className={`p-1 rounded-md cursor-pointer transition-colors ${
+                        isPlayingTTS
+                          ? 'bg-emerald-500 text-white'
+                          : 'text-slate-600 hover:text-[#4B32E6] hover:bg-slate-100 disabled:opacity-40'
+                      }`}
+                      title={isPlayingTTS ? 'Playing audio...' : 'Listen to text'}
+                    >
+                      <Volume2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {isListeningSpeech && (
+                  <p className="text-[11px] font-bold text-rose-600 animate-pulse flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 inline-block animate-ping"></span>
+                    <span>Listening... speak now in {speechLang === 'ta-IN' ? 'Tamil' : speechLang === 'hi-IN' ? 'Hindi' : 'English'}</span>
+                  </p>
+                )}
+
+                {/* AI Assistant Button */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleGenerateAIVideoDesc}
+                    disabled={aiGeneratingDesc}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-[#4B32E6] to-[#4099FF] text-white hover:opacity-95 shadow-2xs cursor-pointer transition-all disabled:opacity-50"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <span>{aiGeneratingDesc ? 'Generating AI Description...' : (t.aiDescription || 'Generate AI Description')}</span>
+                  </button>
+
+                  <span className="text-[10px] text-slate-400">
+                    Grounded Gemini 2.5 Flash Engine
+                  </span>
+                </div>
+
+                {/* AI Notice */}
+                {aiVideoNotice && (
+                  <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-semibold flex items-center gap-2">
+                    <Lightbulb className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>{aiVideoNotice}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowVideoModal(false)}
+                  className="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs py-2.5 rounded-xl font-bold cursor-pointer transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={videoSaving}
+                  className="w-1/2 bg-[#4B32E6] hover:bg-[#3D26D1] text-white text-xs py-2.5 rounded-xl font-bold shadow-sm cursor-pointer transition-colors disabled:opacity-50"
+                >
+                  {videoSaving ? 'Saving...' : (editingVideo ? 'Update Video' : 'Publish Video Demo')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Service Radius Modal */}
+      {showRadiusModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="max-w-md w-full p-6 space-y-4 rounded-2xl bg-white text-slate-900 border border-slate-200 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center">
+                  <MapPin className="w-4 h-4" />
+                </div>
+                <h3 className="text-lg font-black text-slate-900">
+                  {t.expandRadius || 'Service Radius Settings'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowRadiusModal(false)}
+                className="text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <p className="text-slate-600">
+                Set how far you are willing to travel for home services, tutoring sessions, or local catering deliveries.
+              </p>
+
+              <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-2xl text-center space-y-1">
+                <span className="text-[11px] font-bold text-slate-500 uppercase">Selected Coverage Area</span>
+                <div className="text-3xl font-black text-[#4B32E6]">{editRadius} km</div>
+                <p className="text-[11px] text-slate-600">
+                  Covers approx. {Math.round(Math.PI * editRadius * editRadius)} sq. km around {currentUser?.location_name || 'your neighborhood'}.
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1.5">Choose Radius (km)</label>
+                <div className="grid grid-cols-5 gap-2">
+                  {[2, 5, 10, 15, 25].map((rad) => (
+                    <button
+                      key={rad}
+                      type="button"
+                      onClick={() => setEditRadius(rad)}
+                      className={`py-2 rounded-xl text-xs font-black cursor-pointer transition-all ${
+                        editRadius === rad
+                          ? 'bg-[#4B32E6] text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      {rad} km
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowRadiusModal(false)}
+                  className="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs py-2.5 rounded-xl font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveServiceRadius}
+                  disabled={radiusSaving}
+                  className="w-1/2 bg-[#4B32E6] hover:bg-[#3D26D1] text-white text-xs py-2.5 rounded-xl font-bold shadow-sm cursor-pointer disabled:opacity-50"
+                >
+                  {radiusSaving ? 'Updating...' : 'Save Radius'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Video Player Modal */}
+      {playingVideoUrl && (
+        <div className="fixed inset-0 z-[1300] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setPlayingVideoUrl(null)}>
+          <div className="relative max-w-2xl w-full bg-black rounded-2xl overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setPlayingVideoUrl(null)}
+              className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/70 text-white flex items-center justify-center cursor-pointer hover:bg-black"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <video
+              src={playingVideoUrl}
+              controls
+              autoPlay
+              className="w-full aspect-video object-contain"
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
