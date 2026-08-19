@@ -11,10 +11,12 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 def generate_match_explanation_fallback(reasons: List[str], provider_name: str, title: str) -> str:
     """
-    Deterministic explanation synthesis.
+    Deterministic rule-based explanation synthesis when Gemini API is unavailable or quota is exceeded.
     """
-    reasons_clean = [r.replace("✓ ", "") for r in reasons]
-    return f"{provider_name} ({title}) is a strong match due to " + ", ".join(reasons_clean[:3]) + "."
+    if reasons:
+        bulleted = "\n".join([f"✓ {r.replace('✓ ', '').strip()}" for r in reasons if r])
+        return f"Matched because:\n{bulleted}"
+    return f"Matched because:\n✓ Same service category\n✓ Provider location is nearby\n✓ Skills match customer requirement"
 
 def rank_and_explain_matches(
     db: Session,
@@ -53,7 +55,7 @@ def rank_and_explain_matches(
         provider_name = user.name if user else "SilverHands Provider"
         title = provider.title or "Skilled Provider"
 
-        # Generate natural language explanation (Gemini or Fallback)
+        # Generate natural language explanation (Gemini or Rule-Based Fallback)
         explanation = None
         if GEMINI_API_KEY:
             try:
@@ -72,14 +74,21 @@ Match Percentage: {match_data['score']}%
 Keep it friendly, clear, and reassuring.
 """
                 response = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="models/gemini-3.6-flash",
                     contents=prompt,
                     config=types.GenerateContentConfig(temperature=0.2)
                 )
                 if response and response.text:
                     explanation = response.text.strip()
             except Exception as e:
-                print(f"[MatchingAgent] Gemini explanation failed: {e}")
+                err_str = str(e)
+                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                    print(f"[MatchingAgent] Gemini unavailable (429 RESOURCE_EXHAUSTED), using rule-based explanation fallback.")
+                else:
+                    print(f"[MatchingAgent] Gemini unavailable ({e}), using rule-based explanation fallback.")
+
+        if match_data['score'] == 0.0:
+            continue
 
         if not explanation:
             explanation = generate_match_explanation_fallback(match_data['reasons'], provider_name, title)

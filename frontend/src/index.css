@@ -3,33 +3,77 @@
 
 :root {
   --font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  --bg-warm: #FAF8F5;
-  --text-main: #18181B;
-  --primary-amber: #D97706;
-  --primary-dark: #B45309;
-  --indigo-deep: #1E1B4B;
-  --teal-emerald: #0D9488;
+  
+  /* Senior-Friendly Color System Tokens */
+  --color-primary-blue: #1D4ED8;
+  --color-dark-blue: #1E3A8A;
+  --color-light-blue-bg: #EFF6FF;
+  --color-main-bg: #F8FAFC;
+  --color-card-bg: #FFFFFF;
+  --color-heading: #0F172A;
+  --color-normal-text: #1E293B;
+  --color-secondary-text: #475569;
+  
+  /* Senior Status Colors */
+  --color-success: #15803D;
+  --color-success-bg: #DCFCE7;
+  --color-warning: #C2410C;
+  --color-warning-bg: #FFEDD5;
+  --color-danger: #DC2626;
+  --color-danger-bg: #FEF2F2;
+}
+
+/* Global Font Accessibility Scaling (Controls sizing & spacing only) */
+html[data-accessibility="standard"], body[data-accessibility="standard"] {
+  font-size: 16px;
+}
+
+html[data-accessibility="large"], body[data-accessibility="large"] {
+  font-size: 18px;
+}
+
+html[data-accessibility="xlarge"], body[data-accessibility="xlarge"] {
+  font-size: 20px;
+}
+
+html[data-accessibility="xlarge-voice"], body[data-accessibility="xlarge-voice"] {
+  font-size: 22px;
+}
+
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 body {
   font-family: var(--font-family);
-  background-color: var(--bg-warm);
-  color: var(--text-main);
-  font-size: 1.125rem; /* 18px base font for high senior accessibility */
+  background-color: var(--color-main-bg);
+  color: var(--color-normal-text);
   line-height: 1.6;
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Accessibility high-contrast focus rings */
+/* Accessibility focus rings & touch target minimums */
 button, input, textarea, select {
   font-family: inherit;
 }
 
 button:focus-visible, input:focus-visible, textarea:focus-visible {
-  outline: 3px solid var(--primary-amber);
+  outline: 3px solid var(--color-primary-blue);
   outline-offset: 2px;
+}
+
+/* Ensure minimum touch target for buttons */
+button {
+  min-height: 48px;
 }
 
 /* Custom scrollbars */
@@ -39,25 +83,107 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 }
 
 ::-webkit-scrollbar-track {
-  background: #F4F4F5;
+  background: #F1F5F9;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: #94A3B8;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: #64748B;
 }
 
-/* Leaflet Map popup customization */
-.leaflet-popup-content-wrapper {
-  border-radius: 12px !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
-  padding: 4px !important;
+/* Accessible Font Scaling Overrides */
+[data-accessibility="large"] .text-xs { font-size: 0.875rem !important; }
+[data-accessibility="large"] .text-sm { font-size: 1rem !important; }
+[data-accessibility="large"] .text-base { font-size: 1.125rem !important; }
+[data-accessibility="large"] .text-lg { font-size: 1.25rem !important; }
+[data-accessibility="large"] .text-xl { font-size: 1.5rem !important; }
+
+[data-accessibility="xlarge"] .text-xs, [data-accessibility="xlarge-voice"] .text-xs { font-size: 1rem !important; }
+[data-accessibility="xlarge"] .text-sm, [data-accessibility="xlarge-voice"] .text-sm { font-size: 1.125rem !important; }
+[data-accessibility="xlarge"] .text-base, [data-accessibility="xlarge-voice"] .text-base { font-size: 1.25rem !important; }
+[data-accessibility="xlarge"] .text-lg, [data-accessibility="xlarge-voice"] .text-lg { font-size: 1.5rem !important; }
+[data-accessibility="xlarge"] .text-xl, [data-accessibility="xlarge-voice"] .text-xl { font-size: 1.75rem !important; }
+
+/* HIGH CONTRAST DISPLAY THEME OVERRIDES (Controls background, text colors, borders & button contrast independently) */
+html[data-high-contrast="true"], html[data-high-contrast="true"] body {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
 }
 
-.leaflet-container {
-  font-family: var(--font-family) !important;
+[data-high-contrast="true"] body {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+[data-high-contrast="true"] div,
+[data-high-contrast="true"] main,
+[data-high-contrast="true"] section,
+[data-high-contrast="true"] article,
+[data-high-contrast="true"] header,
+[data-high-contrast="true"] footer {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+  box-shadow: none !important;
+}
+
+[data-high-contrast="true"] p,
+[data-high-contrast="true"] span,
+[data-high-contrast="true"] h1,
+[data-high-contrast="true"] h2,
+[data-high-contrast="true"] h3,
+[data-high-contrast="true"] h4,
+[data-high-contrast="true"] h5,
+[data-high-contrast="true"] h6,
+[data-high-contrast="true"] label,
+[data-high-contrast="true"] li {
+  color: #000000 !important;
+  opacity: 1 !important;
+}
+
+[data-high-contrast="true"] button.bg-blue-600,
+[data-high-contrast="true"] button.bg-blue-700,
+[data-high-contrast="true"] button.bg-blue-800,
+[data-high-contrast="true"] button.bg-emerald-600,
+[data-high-contrast="true"] button.bg-emerald-700 {
+  background-color: #0037FF !important;
+  color: #FFFFFF !important;
+  border: 2px solid #000000 !important;
+}
+
+[data-high-contrast="true"] button.bg-blue-600 *,
+[data-high-contrast="true"] button.bg-blue-700 *,
+[data-high-contrast="true"] button.bg-blue-800 *,
+[data-high-contrast="true"] button.bg-emerald-600 *,
+[data-high-contrast="true"] button.bg-emerald-700 * {
+  color: #FFFFFF !important;
+}
+
+[data-high-contrast="true"] input,
+[data-high-contrast="true"] textarea,
+[data-high-contrast="true"] select {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+}
+
+[data-high-contrast="true"] .border,
+[data-high-contrast="true"] .border-t,
+[data-high-contrast="true"] .border-b,
+[data-high-contrast="true"] .border-l,
+[data-high-contrast="true"] .border-r,
+[data-high-contrast="true"] .border-2 {
+  border-color: #000000 !important;
+}
+
+[data-high-contrast="true"] .shadow-xs,
+[data-high-contrast="true"] .shadow-sm,
+[data-high-contrast="true"] .shadow-md,
+[data-high-contrast="true"] .shadow-lg,
+[data-high-contrast="true"] .shadow-xl,
+[data-high-contrast="true"] .shadow-2xl {
+  box-shadow: none !important;
 }

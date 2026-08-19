@@ -52,22 +52,87 @@ class UserResponse(UserBase):
 class ProviderProfileBase(BaseModel):
     title: Optional[str] = None
     bio: Optional[str] = None
-    experience_years: int = 0
+    experience_years: Optional[int] = 0
+    languages: Optional[str] = "Tamil, English"
+    target_age_group: Optional[str] = None
     availability: str = "Available"
-    rating: float = 4.5
+    rating: Optional[float] = None
     total_reviews: int = 0
+    price: Optional[float] = None
+    pricing_unit: Optional[str] = "per_service"
+    payment_method: Optional[str] = "upi"
+    payment_upi_id: Optional[str] = None
+    payment_instructions: Optional[str] = None
 
 class ProviderProfileCreate(ProviderProfileBase):
     user_id: str
+
+class PublicProviderResponse(BaseModel):
+    id: str
+    user_id: str
+    created_at: datetime
+    title: Optional[str] = None
+    bio: Optional[str] = None
+    experience_years: Optional[int] = 0
+    languages: Optional[str] = "Tamil, English"
+    target_age_group: Optional[str] = None
+    availability: str = "Available"
+    status: Optional[str] = "PUBLISHED"
+    readiness_score: Optional[int] = 85
+    rating: Optional[float] = None
+    total_reviews: int = 0
+    price: Optional[float] = None
+    pricing_unit: Optional[str] = "per_service"
+    user: Optional[UserResponse] = None
+    skills: List[SkillResponse] = []
+    services: List[ServiceResponse] = []
+    model_config = ConfigDict(from_attributes=True)
 
 class ProviderDetailResponse(ProviderProfileBase):
     id: str
     user_id: str
     created_at: datetime
+    status: Optional[str] = "PUBLISHED"
+    readiness_score: Optional[int] = 85
     user: Optional[UserResponse] = None
     skills: List[SkillResponse] = []
     services: List[ServiceResponse] = []
     model_config = ConfigDict(from_attributes=True)
+
+class ProviderProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    title: Optional[str] = None
+    bio: Optional[str] = None
+    experience_years: Optional[int] = None
+    languages: Optional[str] = None
+    target_age_group: Optional[str] = None
+    availability: Optional[str] = None
+    location: Optional[str] = None
+    skills: Optional[List[str]] = None
+    services: Optional[List[str]] = None
+    price: Optional[float] = None
+    pricing_unit: Optional[str] = None
+    payment_method: Optional[str] = None
+    payment_upi_id: Optional[str] = None
+    payment_instructions: Optional[str] = None
+    status: Optional[str] = None
+
+class NLPUpdateProposal(BaseModel):
+    intent: str  # ADD_SERVICE, REMOVE_SERVICE, ADD_SKILL, REMOVE_SKILL, UPDATE_EXPERIENCE, UPDATE_LOCATION, DELETE_PROFILE
+    summary: str
+    target_field: Optional[str] = None
+    value: Optional[str] = None
+    draft_update: ProviderProfileUpdate
+
+class OpportunitySuggestion(BaseModel):
+    id: str
+    title: str
+    category: str
+    description: str
+    action_type: str  # ADD_SERVICE, UPDATE_PROFILE, HIGHLIGHT_SKILL
+    suggested_value: str
+    reason: str
+    badge_label: str = "Suggested opportunity"
 
 # Provider Full Register Schema
 class ProviderRegisterRequest(BaseModel):
@@ -78,8 +143,15 @@ class ProviderRegisterRequest(BaseModel):
     longitude: Optional[float] = 80.2707
     title: str
     bio: str
-    experience_years: int
+    experience_years: Optional[int] = 0
+    languages: Optional[str] = "Tamil, English"
+    target_age_group: Optional[str] = None
     availability: str = "Available"
+    price: Optional[float] = None
+    pricing_unit: Optional[str] = "per_service"
+    payment_method: Optional[str] = "upi"
+    payment_upi_id: Optional[str] = None
+    payment_instructions: Optional[str] = None
     skills: List[str] = []
     services: List[str] = []
 
@@ -92,14 +164,36 @@ class ServiceRequestBase(BaseModel):
     latitude: Optional[float] = 13.0827
     longitude: Optional[float] = 80.2707
     preferred_date: Optional[str] = None
+    requirement_quantity: Optional[int] = 1
+    requirement_unit: Optional[str] = "units"
 
 class ServiceRequestCreate(ServiceRequestBase):
     customer_id: str
 
+class SendQuotePayload(BaseModel):
+    quote_amount: float
+    additional_charge: Optional[float] = 0.0
+    note: Optional[str] = None
+
 class ServiceRequestResponse(ServiceRequestBase):
     id: str
     customer_id: str
+    provider_id: Optional[str] = None
     status: str
+    agreed_price: Optional[float] = None
+    agreed_pricing_unit: Optional[str] = "per_service"
+    quote_amount: Optional[float] = None
+    quote_pricing_unit: Optional[str] = None
+    quote_additional_charge: Optional[float] = 0.0
+    quote_note: Optional[str] = None
+    quote_status: Optional[str] = "PENDING"
+    quoted_at: Optional[datetime] = None
+    quote_responded_at: Optional[datetime] = None
+    payment_status: Optional[str] = "NOT_REQUIRED"
+    payment_method: Optional[str] = None
+    payment_upi_id: Optional[str] = None
+    payment_instructions: Optional[str] = None
+    payment_confirmation_at: Optional[datetime] = None
     created_at: datetime
     customer: Optional[UserResponse] = None
     model_config = ConfigDict(from_attributes=True)
@@ -127,14 +221,16 @@ class SkillAnalysisRequest(BaseModel):
 class SkillAnalysisResponse(BaseModel):
     skills: List[str]
     category: str
-    experience_years: int
+    experience_years: Optional[int] = None
+    target_age_group: Optional[str] = None
+    languages: List[str] = []
     services: List[str]
     keywords: List[str]
     suggested_title: str
 
 class ProfileGenerationRequest(BaseModel):
     skills: List[str]
-    experience_years: int
+    experience_years: Optional[int] = None
     services: List[str]
 
 class ProfileGenerationResponse(BaseModel):
@@ -145,3 +241,26 @@ class ProfileGenerationResponse(BaseModel):
 
 class AIChatRequest(BaseModel):
     message: str
+
+class OpportunitySuggestionItem(BaseModel):
+    id: str
+    title: str
+    type: str  # "REAL_DEMAND" or "SKILL_OPPORTUNITY"
+    matched_skills: List[str] = []
+    reason: str
+    demand_count: Optional[int] = None
+    time_window_days: Optional[int] = 30
+    location: Optional[str] = None
+    category: Optional[str] = None
+    confidence: str = "medium"  # "high", "medium"
+    suggested_action: str = "ADD_SERVICE"
+    suggested_service_name: str
+    suggested_description: Optional[str] = None
+    badge_label: str  # "REAL MARKET DEMAND" or "POTENTIAL OPPORTUNITY"
+
+class SeniorOpportunitiesResponse(BaseModel):
+    has_low_request_activity: bool = True
+    recent_request_count: int = 0
+    status_message: Optional[str] = None
+    suggestions: List[OpportunitySuggestionItem] = []
+

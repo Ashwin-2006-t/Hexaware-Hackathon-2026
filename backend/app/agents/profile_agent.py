@@ -1,13 +1,13 @@
 import os
 import json
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-def generate_profile_fallback(skills: List[str], experience_years: int, services: List[str]) -> Dict[str, Any]:
+def generate_profile_fallback(skills: List[str], experience_years: Optional[int], services: List[str]) -> Dict[str, Any]:
     """
     Deterministic fallback for profile generation when Gemini API is offline/unavailable.
     Applies strict grounding rules: no 0 years of experience claims.
@@ -17,7 +17,7 @@ def generate_profile_fallback(skills: List[str], experience_years: int, services
     
     suggested_title = f"{primary_skill} Specialist"
     
-    if experience_years > 0:
+    if experience_years and experience_years > 0:
         bio = f"Dedicated specialist with over {experience_years} years of experience in {all_skills_str}, providing authentic quality work directly from home."
     else:
         bio = f"Skilled in {all_skills_str}, offering authentic home-based services."
@@ -35,7 +35,7 @@ def generate_profile_fallback(skills: List[str], experience_years: int, services
         "keywords": list(set(keywords))
     }
 
-def generate_profile(skills: List[str], experience_years: int, services: List[str]) -> Dict[str, Any]:
+def generate_profile(skills: List[str], experience_years: Optional[int], services: List[str]) -> Dict[str, Any]:
     """
     Generate professional title, warm grounded bio, service descriptions, and keywords using Gemini API or fallback.
     """
@@ -47,16 +47,17 @@ def generate_profile(skills: List[str], experience_years: int, services: List[st
         from google.genai import types
         
         client = genai.Client(api_key=GEMINI_API_KEY)
+        exp_str = f"{experience_years} years" if experience_years else "Not explicitly specified"
         prompt = f"""
 You are an expert profile biographer for SilverHands, a platform empowering senior citizens and homemakers in India.
 Generate a dignified, professional profile based ONLY on the provided information:
 - Skills: {skills}
-- Experience: {experience_years} years
+- Experience: {exp_str}
 - Services: {services}
 
 STRICT GROUNDING RULES:
 1. Treat the input skills, experience, and services as the ONLY source of truth.
-2. If experience_years is 0, do NOT mention years of experience or "0 years of experience". Use neutral wording such as: "Skilled in {', '.join(skills) if skills else 'home services'}, offering home-based services."
+2. If experience is null or 0, do NOT mention years of experience or invent a number. Use warm neutral wording: "Skilled in {', '.join(skills) if skills else 'home services'}, offering authentic home-based services."
 3. Do NOT invent unsupported experience, certifications, qualifications, or extra services.
 4. Keep the bio respectful, warm, concise (2-3 sentences max), and strictly factual.
 
@@ -69,7 +70,7 @@ Respond strictly with valid JSON conforming to this schema:
 }}
 """
         response = client.models.generate_content(
-            model="gemini-3.6-flash",
+            model="models/gemini-3.6-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",

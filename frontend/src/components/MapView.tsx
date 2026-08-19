@@ -1,8 +1,13 @@
 import React from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+// @ts-ignore
+import { MapContainer as ReactMapContainer, TileLayer as ReactTileLayer, Marker, Popup } from 'react-leaflet';
+// @ts-ignore
 import L from 'leaflet';
 import type { MatchResult } from '../types';
 import { Star, MapPin } from 'lucide-react';
+
+const MapContainer: any = ReactMapContainer;
+const TileLayer: any = ReactTileLayer;
 
 // Fix default Leaflet icon paths
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -21,7 +26,7 @@ export const MapView: React.FC<MapViewProps> = ({ matches, onSelectProvider }) =
   const defaultCenter: [number, number] = [13.0418, 80.2541];
 
   return (
-    <div className="w-full h-[450px] rounded-3xl overflow-hidden border-2 border-zinc-200 shadow-md relative z-10">
+    <div className="w-full h-[450px] rounded-3xl overflow-hidden border-2 border-blue-200 shadow-md relative z-10">
       <MapContainer
         center={defaultCenter}
         zoom={12}
@@ -46,7 +51,7 @@ export const MapView: React.FC<MapViewProps> = ({ matches, onSelectProvider }) =
               <Popup>
                 <div className="p-2 space-y-2 max-w-xs font-sans">
                   <div className="flex items-center justify-between">
-                    <span className="bg-emerald-100 text-emerald-900 text-xs font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-300">
+                    <span className="bg-blue-100 text-blue-900 text-xs font-extrabold px-2.5 py-0.5 rounded-full border border-blue-300">
                       {match.score}% MATCH
                     </span>
                     <span className="text-xs font-bold text-amber-700 flex items-center">
@@ -61,13 +66,13 @@ export const MapView: React.FC<MapViewProps> = ({ matches, onSelectProvider }) =
                   </div>
 
                   <div className="flex items-center text-xs text-zinc-500">
-                    <MapPin className="w-3.5 h-3.5 text-indigo-600 mr-1" />
+                    <MapPin className="w-3.5 h-3.5 text-blue-600 mr-1" />
                     <span>{user.location} ({match.distance_km} km)</span>
                   </div>
 
                   <button
                     onClick={() => onSelectProvider(match.provider_id)}
-                    className="w-full mt-2 bg-indigo-900 hover:bg-indigo-950 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition-colors flex items-center justify-center space-x-1 cursor-pointer"
+                    className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition-colors flex items-center justify-center space-x-1 cursor-pointer"
                   >
                     <span>View Profile</span>
                   </button>
