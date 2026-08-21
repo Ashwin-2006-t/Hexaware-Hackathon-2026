@@ -52,7 +52,13 @@ def create_review(
     if not provider:
         raise HTTPException(status_code=404, detail="Assigned provider profile not found.")
 
-    rating_val = max(1, min(5, payload.rating))
+    if payload.rating < 1 or payload.rating > 5:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Rating must be between 1 and 5 stars."
+        )
+
+    rating_val = payload.rating
 
     review = Review(
         request_id=req.id,

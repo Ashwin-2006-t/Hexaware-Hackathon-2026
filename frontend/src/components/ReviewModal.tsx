@@ -2,10 +2,13 @@ import React, { useState } from 'react';
 import { Star, X, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 import { createReview } from '../services/api';
 
+import { translations, type Language } from '../i18n';
+
 interface ReviewModalProps {
   requestId: string;
   providerName: string;
   serviceTitle: string;
+  language?: Language;
   onClose: () => void;
   onReviewSubmitted: () => void;
 }
@@ -14,9 +17,12 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
   requestId,
   providerName,
   serviceTitle,
+  language = 'en',
   onClose,
   onReviewSubmitted
 }) => {
+  const t = translations[language].review;
+  const tc = translations[language].common;
   const [rating, setRating] = useState<number>(5);
   const [comment, setComment] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -61,7 +67,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
         {/* Header */}
         <div className="space-y-1">
           <h3 className="text-2xl font-extrabold text-zinc-900">
-            Review Your Service
+            {t.title}
           </h3>
           <p className="text-sm font-semibold text-blue-900">
             {serviceTitle} by {providerName}
@@ -78,8 +84,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
         {isSuccess ? (
           <div className="py-8 text-center bg-emerald-50 rounded-2xl border border-emerald-200 space-y-3">
             <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
-            <h4 className="text-xl font-extrabold text-emerald-950">Thank You for Your Feedback!</h4>
-            <p className="text-xs text-emerald-800 font-medium">Your review has been published and helps local neighbors find quality senior services.</p>
+            <h4 className="text-xl font-extrabold text-emerald-950">{tc.success}</h4>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -87,7 +92,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
             {/* Rating Stars Selection */}
             <div className="space-y-2 text-center">
               <label className="block text-xs font-extrabold uppercase tracking-wider text-zinc-600">
-                Rate your experience (1 to 5 Stars)
+                {t.ratingLabel}
               </label>
               <div className="flex items-center justify-center space-x-3 py-2">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -98,60 +103,53 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                     className="p-2 transition-transform hover:scale-125 cursor-pointer focus:outline-none"
                   >
                     <Star
-                      className={`w-10 h-10 ${
+                      className={`w-8 h-8 ${
                         star <= rating
-                          ? 'fill-amber-400 text-amber-500'
-                          : 'text-zinc-300 hover:text-amber-300'
+                          ? 'fill-amber-400 text-amber-400'
+                          : 'text-zinc-300'
                       }`}
                     />
                   </button>
                 ))}
               </div>
-              <p className="text-sm font-bold text-amber-700">
-                {rating === 5 && '★★★★★ Excellent Service!'}
-                {rating === 4 && '★★★★☆ Very Good Service'}
-                {rating === 3 && '★★★☆☆ Good Service'}
-                {rating === 2 && '★★☆☆☆ Average Service'}
-                {rating === 1 && '★☆☆☆☆ Needs Improvement'}
-              </p>
             </div>
 
-            {/* Written Comment Input */}
+            {/* Comment Area */}
             <div className="space-y-2">
-              <label className="block text-xs font-extrabold uppercase tracking-wider text-zinc-700">
-                Share your feedback (Optional)
+              <label className="block text-xs font-extrabold uppercase tracking-wider text-zinc-600">
+                {t.commentLabel}
               </label>
               <textarea
-                rows={3}
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder="Describe your experience with this senior provider..."
-                className="w-full p-4 rounded-2xl border-2 border-blue-100 focus:border-blue-600 bg-slate-50 text-sm font-medium text-zinc-900 focus:outline-none"
+                placeholder={t.commentPlaceholder}
+                rows={4}
+                className="w-full p-4 rounded-2xl border border-zinc-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium resize-none bg-zinc-50/50"
               />
             </div>
 
-            {/* Action Buttons */}
+            {/* Submit Action Buttons */}
             <div className="flex items-center space-x-3 pt-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-3.5 rounded-xl border border-zinc-200 text-zinc-700 font-bold text-sm hover:bg-zinc-50 transition-colors cursor-pointer min-h-[48px]"
+                className="flex-1 py-4 px-6 rounded-2xl border border-zinc-200 text-zinc-700 font-extrabold text-sm hover:bg-zinc-50 transition-colors cursor-pointer min-h-[52px]"
               >
-                Cancel
+                {tc.cancel}
               </button>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-extrabold text-sm flex items-center justify-center space-x-2 transition-all shadow-md cursor-pointer min-h-[48px]"
+                className="flex-1 py-4 px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-extrabold text-sm shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer min-h-[52px]"
               >
                 {isLoading ? (
                   <>
                     <RefreshCw className="w-5 h-5 animate-spin" />
-                    <span>Submitting...</span>
+                    <span>{tc.processing}</span>
                   </>
                 ) : (
-                  <span>Submit Review</span>
+                  <span>{t.submitBtn}</span>
                 )}
               </button>
             </div>

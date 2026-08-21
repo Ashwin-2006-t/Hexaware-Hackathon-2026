@@ -19,6 +19,7 @@ class ServiceRequestCreatePayload(BaseModel):
     description: str
     category: Optional[str] = None
     location: Optional[str] = "Chennai, Tamil Nadu"
+    delivery_mode: Optional[str] = "BOTH"
     latitude: Optional[float] = 13.0827
     longitude: Optional[float] = 80.2707
     preferred_date: Optional[str] = None
@@ -91,6 +92,20 @@ def create_request(
     req_qty = max(1, payload.requirement_quantity or 1)
     req_unit = payload.requirement_unit or "units"
 
+    # Resolve Delivery Mode: Per-service override > payload > provider profile mode > BOTH
+    resolved_mode = payload.delivery_mode or "BOTH"
+    if provider.services:
+        matched_srv = next(
+            (s for s in provider.services if s.name and (s.name.lower() in payload.title.lower() or payload.title.lower() in s.name.lower())),
+            None
+        )
+        if matched_srv and matched_srv.delivery_mode:
+            resolved_mode = matched_srv.delivery_mode
+        elif provider.service_delivery_mode:
+            resolved_mode = provider.service_delivery_mode
+    elif provider.service_delivery_mode:
+        resolved_mode = provider.service_delivery_mode
+
     req = ServiceRequest(
         customer_id=current_user.id,
         provider_id=provider.id,
@@ -99,6 +114,7 @@ def create_request(
         message=payload.description,
         category=payload.category or "General",
         location=payload.location or current_user.location or "Chennai, Tamil Nadu",
+        delivery_mode=resolved_mode,
         latitude=payload.latitude or 13.0827,
         longitude=payload.longitude or 80.2707,
         preferred_date=payload.preferred_date,

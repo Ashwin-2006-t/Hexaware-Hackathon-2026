@@ -260,39 +260,10 @@ def run_seed_data(db: Session = Depends(get_db)):
                 )
                 db.add(service)
 
-    for req_data in SEED_CUSTOMER_REQUESTS:
-        cust = db.query(User).filter(User.email == req_data["customer_email"]).first()
-        if not cust:
-            cust = User(
-                name=req_data["customer_name"],
-                email=req_data["customer_email"],
-                role="customer",
-                location=req_data["location"],
-                latitude=req_data["latitude"],
-                longitude=req_data["longitude"]
-            )
-            db.add(cust)
-            db.flush()
-
-        existing_req = db.query(ServiceRequest).filter(ServiceRequest.title == req_data["title"]).first()
-        if not existing_req:
-            sr = ServiceRequest(
-                customer_id=cust.id,
-                title=req_data["title"],
-                description=req_data["description"],
-                category=req_data["category"],
-                location=req_data["location"],
-                latitude=req_data["latitude"],
-                longitude=req_data["longitude"],
-                status="open"
-            )
-            db.add(sr)
-            added_requests += 1
-
     db.commit()
 
     return {
         "status": "success",
-        "message": f"Seeded {added_providers} new providers and {added_requests} customer requests.",
+        "message": f"Seeded {added_providers} new providers.",
         "total_providers": db.query(ProviderProfile).count()
     }

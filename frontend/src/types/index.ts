@@ -20,12 +20,15 @@ export interface Skill {
   proficiency?: string;
 }
 
+export type DeliveryMode = 'IN_PERSON' | 'ONLINE' | 'BOTH';
+
 export interface ServiceItem {
   id?: string;
   name: string;
   description?: string;
   category?: string;
   price_range?: string;
+  delivery_mode?: DeliveryMode | string;
 }
 
 export interface User {
@@ -54,6 +57,7 @@ export interface ProviderProfile {
   languages?: string | null;
   target_age_group?: string | null;
   availability: string;
+  service_delivery_mode?: DeliveryMode | string;
   status?: ProfileStatus;
   readiness_score?: number;
   rating: number;
@@ -63,6 +67,12 @@ export interface ProviderProfile {
   payment_method?: PaymentMethod | string;
   payment_upi_id?: string | null;
   payment_instructions?: string | null;
+  location?: string;
+  latitude?: number;
+  longitude?: number;
+  city?: string;
+  state?: string;
+  country?: string;
   created_at?: string;
   user?: User;
   skills: Skill[];
@@ -79,6 +89,7 @@ export interface ServiceRequest {
   description: string;
   category?: string;
   location?: string;
+  delivery_mode?: DeliveryMode | string;
   latitude?: number;
   longitude?: number;
   preferred_date?: string;
@@ -153,6 +164,7 @@ export interface ProviderProfileUpdate {
   languages?: string;
   target_age_group?: string;
   availability?: string;
+  service_delivery_mode?: DeliveryMode | string;
   location?: string;
   skills?: string[];
   services?: string[];
@@ -198,6 +210,8 @@ export interface OpportunitySuggestionItem {
   suggested_service_name: string;
   suggested_description?: string;
   badge_label: string;
+  estimated_earning?: number;
+  match_score?: number;
 }
 
 export interface SeniorOpportunitiesResponse {
@@ -225,11 +239,94 @@ export interface NotificationRecord {
   message: string;
   is_read: boolean;
   related_request_id?: string | null;
+  whatsapp_message_id?: string | null;
+  whatsapp_recipient?: string | null;
+  whatsapp_type?: string | null;
   whatsapp_status?: string | null;
   whatsapp_phone?: string | null;
   whatsapp_message?: string | null;
   whatsapp_sent_at?: string | null;
+  whatsapp_error_details?: string | null;
+  created_at: string;
+}
+export interface VirtualRoomMessageRecord {
+  id: string;
+  room_id: string;
+  sender_id: string;
+  sender_name: string;
+  content: string;
+  timestamp: string;
+}
+
+export interface VirtualRoomRecord {
+  id: string;
+  booking_id: string;
+  room_code: string;
+  host_user_id: string;
+  participant_user_id: string;
+  host_name: string;
+  participant_name: string;
+  status: 'ACTIVE' | 'ENDED' | string;
+  start_time: string;
+  end_time?: string | null;
+  service_title: string;
+  messages: VirtualRoomMessageRecord[];
+}
+
+export interface CallLogRecord {
+  id: string;
+  request_id: string;
+  caller_id: string;
+  receiver_id: string;
+  caller_name: string;
+  receiver_name: string;
+  masked_phone: string;
+  call_link: string;
+  status: string;
+  started_at: string;
+  ended_at?: string | null;
+  duration_seconds: number;
   created_at: string;
 }
 
+export interface AIInterviewMessageRecord {
+  id: string;
+  session_id: string;
+  role: 'AI' | 'SENIOR' | string;
+  message: string;
+  input_type: 'TEXT' | 'VOICE' | string;
+  question_number: number;
+  created_at: string;
+}
 
+export interface AIInterviewResultRecord {
+  id: string;
+  session_id: string;
+  detected_skills: string; // JSON string or array string
+  experience_summary: string;
+  capabilities: string;    // JSON string or array string
+  confidence_score: number;
+  suggested_services: string; // JSON string or array string
+  evidence?: string | null;
+  recommendation_reason?: string | null;
+  created_at: string;
+}
+
+export interface AIInterviewSessionRecord {
+  id: string;
+  senior_id: string;
+  session_type?: 'REGISTRATION' | 'UPDATE' | string;
+  language?: 'en' | 'ta' | 'hi' | string;
+  selected_domain: string;
+  selected_skill: string;
+  existing_profile_snapshot?: string | null;
+  status: 'CREATED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | string;
+  started_at: string;
+  completed_at?: string | null;
+  overall_score?: number | null;
+  summary?: string | null;
+  messages: AIInterviewMessageRecord[];
+  result?: AIInterviewResultRecord | null;
+  next_question?: string | null;
+  is_completed_ready?: boolean;
+}

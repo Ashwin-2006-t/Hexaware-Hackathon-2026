@@ -1,5 +1,5 @@
 import os
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 from app.models.domain import ProviderProfile, ServiceRequest, Match
 from app.services.matching_service import calculate_match_score
@@ -21,7 +21,8 @@ def generate_match_explanation_fallback(reasons: List[str], provider_name: str, 
 def rank_and_explain_matches(
     db: Session,
     request: ServiceRequest,
-    providers: List[ProviderProfile]
+    providers: List[ProviderProfile],
+    radius_km: Optional[float] = None
 ) -> List[Dict[str, Any]]:
     """
     Ranks providers using the deterministic matching engine and synthesizes explanations.
@@ -29,10 +30,21 @@ def rank_and_explain_matches(
     results = []
 
     for provider in providers:
+        if provider.status and provider.status != "PUBLISHED":
+            continue
+
         user = provider.user
         skills = [s.name for s in provider.skills]
         services = [srv.name for srv in provider.services]
-        category = provider.skills[0].category if provider.skills else "General"
+        
+        category = "General"
+        if provider.services and provider.services[0].category:
+            category = provider.services[0].category
+        elif provider.skills and provider.skills[0].category:
+            category = provider.skills[0].category
+
+        p_lat = provider.latitude if provider.latitude is not None else (user.latitude if user and user.latitude is not None else None)
+        p_lon = provider.longitude if provider.longitude is not None else (user.longitude if user and user.longitude is not None else None)
 
         match_data = calculate_match_score(
             request_title=request.title,
@@ -47,51 +59,20 @@ def rank_and_explain_matches(
             provider_category=category,
             experience_years=provider.experience_years,
             availability=provider.availability,
-            rating=provider.rating,
-            provider_lat=user.latitude if user else None,
-            provider_lon=user.longitude if user else None
+            rating=provider.rating or 0.0,
+            provider_lat=p_lat,
+            provider_lon=p_lon,
+            radius_km=radius_km
         )
 
         provider_name = user.name if user else "SilverHands Provider"
         title = provider.title or "Skilled Provider"
 
-        # Generate natural language explanation (Gemini or Rule-Based Fallback)
-        explanation = None
-        if GEMINI_API_KEY:
-            try:
-                from google import genai
-                from google.genai import types
-
-                client = genai.Client(api_key=GEMINI_API_KEY)
-                prompt = f"""
-Synthesize a short, 1-2 sentence explanation of why this provider matches the customer request.
-Customer Request: "{request.title} - {request.description}"
-Provider: {provider_name} ({title})
-Matched Reasons: {match_data['reasons']}
-Distance: {match_data['distance_km']} km
-Match Percentage: {match_data['score']}%
-
-Keep it friendly, clear, and reassuring.
-"""
-                response = client.models.generate_content(
-                    model="models/gemini-3.6-flash",
-                    contents=prompt,
-                    config=types.GenerateContentConfig(temperature=0.2)
-                )
-                if response and response.text:
-                    explanation = response.text.strip()
-            except Exception as e:
-                err_str = str(e)
-                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
-                    print(f"[MatchingAgent] Gemini unavailable (429 RESOURCE_EXHAUSTED), using rule-based explanation fallback.")
-                else:
-                    print(f"[MatchingAgent] Gemini unavailable ({e}), using rule-based explanation fallback.")
-
         if match_data['score'] == 0.0:
             continue
 
-        if not explanation:
-            explanation = generate_match_explanation_fallback(match_data['reasons'], provider_name, title)
+        # Generate natural language explanation (Rule-Based Fallback for Instant Search Speed)
+        explanation = generate_match_explanation_fallback(match_data['reasons'], provider_name, title)
 
         results.append({
             "request_id": request.id,

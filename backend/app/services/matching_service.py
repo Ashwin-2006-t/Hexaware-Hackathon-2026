@@ -3,11 +3,9 @@ from typing import List, Dict, Any, Optional
 
 STOPWORDS = {
     "for", "and", "the", "with", "from", "you", "your", "our", "are", "have", "has",
-    "had", "need", "want", "looking", "require", "request", "service", "services",
-    "help", "care", "work", "home", "local", "provider", "providers", "function",
-    "functions", "area", "chennai", "nagar", "best", "good", "new", "day", "days",
-    "time", "near", "nearby", "place", "type", "make", "cook", "like", "teach",
-    "specialist", "expert", "quality", "family", "order", "orders", "ready", "please",
+    "had", "need", "want", "looking", "require", "request", "local", "provider", "providers",
+    "function", "functions", "area", "chennai", "nagar", "best", "good", "new", "day", "days",
+    "time", "near", "nearby", "place", "type", "order", "orders", "ready", "please",
     "give", "take", "call", "send", "find", "get", "put", "must", "can", "also"
 }
 
@@ -83,7 +81,8 @@ def calculate_match_score(
     availability: Optional[str],
     rating: float,
     provider_lat: Optional[float],
-    provider_lon: Optional[float]
+    provider_lon: Optional[float],
+    radius_km: Optional[float] = None
 ) -> Dict[str, Any]:
     """
     Deterministic matching engine with strict Domain Relevance Gatekeeper.
@@ -91,6 +90,7 @@ def calculate_match_score(
     """
     reasons = []
     matched_skills = []
+    matched_services = []
 
     req_full = f"{request_title} {request_description} {request_category or ''}".lower()
     prov_full = f"{provider_title} {provider_bio} {' '.join(provider_skills)} {' '.join(provider_services)} {provider_category or ''}".lower()
@@ -99,8 +99,11 @@ def calculate_match_score(
     req_domains = get_text_domains(req_full)
     prov_domains = get_text_domains(prov_full)
 
+    # Token/Word Extraction for Request
+    req_non_stop = [w for w in req_full.split() if len(w) >= 3 and w not in STOPWORDS]
+
     # RELEVANCE GATEKEEPER:
-    # If the request matches specific domain categories, the provider MUST have domain overlap!
+    # If the request matches specific domain categories, the provider MUST have domain overlap or token overlap!
     if req_domains:
         has_domain_overlap = any(d in prov_domains for d in req_domains)
         if not has_domain_overlap:
@@ -123,23 +126,33 @@ def calculate_match_score(
 
     # Domain overlap points
     if req_domains and any(d in prov_domains for d in req_domains):
-        skill_score += 20.0
+        skill_score += 15.0
 
-    # Token/Skill overlap
-    req_non_stop = [w for w in req_full.split() if len(w) >= 3 and w not in STOPWORDS]
-
-    for skill in provider_skills:
-        skill_clean = skill.lower()
-        skill_tokens = [t for t in skill_clean.split() if len(t) >= 3 and t not in STOPWORDS]
-        if any(t in req_full for t in skill_tokens) or any(t in skill_clean for t in req_non_stop):
-            matched_skills.append(skill)
-            skill_score += 10.0
-
+    # Direct Service Name Match (Exact, Substring, or Token Overlap)
     for service in provider_services:
-        service_clean = service.lower()
+        service_clean = service.lower().strip()
+        if not service_clean:
+            continue
         service_tokens = [t for t in service_clean.split() if len(t) >= 3 and t not in STOPWORDS]
-        if any(t in req_full for t in service_tokens) or any(t in service_clean for t in req_non_stop):
-            skill_score += 10.0
+        # Check substring match or token overlap
+        if service_clean in req_full or req_full in service_clean or any(t in req_full for t in service_tokens) or any(t in service_clean for t in req_non_stop):
+            matched_services.append(service)
+            skill_score += 20.0
+
+    # Direct Skill Name Match
+    for skill in provider_skills:
+        skill_clean = skill.lower().strip()
+        if not skill_clean:
+            continue
+        skill_tokens = [t for t in skill_clean.split() if len(t) >= 3 and t not in STOPWORDS]
+        if skill_clean in req_full or req_full in skill_clean or any(t in req_full for t in skill_tokens) or any(t in skill_clean for t in req_non_stop):
+            matched_skills.append(skill)
+            skill_score += 15.0
+
+    # Title / Bio Keyword Overlap
+    prov_title_clean = (provider_title or "").lower()
+    if any(t in prov_title_clean for t in req_non_stop):
+        skill_score += 10.0
 
     if request_category and provider_category:
         req_cat_clean = request_category.lower()
@@ -158,7 +171,9 @@ def calculate_match_score(
             "reasons": []
         }
 
-    if skill_score >= 20.0:
+    if matched_services:
+        reasons.append(f"✓ Offers service: {', '.join(matched_services[:2])}")
+    elif skill_score >= 20.0:
         reasons.append("✓ Strong skill & domain match")
     else:
         reasons.append("✓ Relevant expertise match")
@@ -168,6 +183,14 @@ def calculate_match_score(
     dist_score = 0.0
     if request_lat is not None and request_lon is not None and provider_lat is not None and provider_lon is not None:
         distance_km = haversine_distance(request_lat, request_lon, provider_lat, provider_lon)
+        if radius_km is not None and radius_km > 0 and distance_km > radius_km:
+            # Provider is outside requested search radius -> exclude!
+            return {
+                "score": 0.0,
+                "distance_km": distance_km,
+                "matched_skills": [],
+                "reasons": []
+            }
         if distance_km <= 3.0:
             dist_score = 25.0
             reasons.append(f"✓ Nearby provider ({distance_km} km away)")

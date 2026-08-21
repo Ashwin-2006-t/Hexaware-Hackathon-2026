@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Bell, X, Check, CheckCheck, ExternalLink, MessageSquare, Sparkles, DollarSign, Award, Info } from 'lucide-react';
+import { Bell, X, Check, CheckCheck, ExternalLink, MessageSquare, Sparkles, DollarSign, Award, Info, Trash2, AlertCircle, ShieldCheck } from 'lucide-react';
 import type { NotificationRecord } from '../types';
 import { WhatsAppNotificationPreview } from './WhatsAppNotificationPreview';
+import { clearAllNotificationsApi, clearSingleNotificationApi } from '../services/api';
+import { translations, type Language } from '../i18n';
 
 interface NotificationDrawerProps {
   isOpen: boolean;
@@ -9,6 +11,9 @@ interface NotificationDrawerProps {
   notifications: NotificationRecord[];
   onMarkAsRead: (id: string) => void;
   onMarkAllAsRead: () => void;
+  onClearAll?: () => void;
+  onClearSingle?: (id: string) => void;
+  language?: Language;
   onNavigateToRequest?: (requestId?: string | null) => void;
   userName?: string;
   userPhone?: string;
@@ -20,57 +25,128 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
   notifications,
   onMarkAsRead,
   onMarkAllAsRead,
+  onClearAll,
+  onClearSingle,
+  language = 'en',
   onNavigateToRequest,
   userName = 'Senior Provider',
   userPhone = '+91 98765 43210'
 }) => {
+  const t = translations[language].notification;
   const [viewTab, setViewTab] = useState<'inapp' | 'whatsapp'>('inapp');
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   if (!isOpen) return null;
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
+  const handleConfirmClearAll = async () => {
+    setIsClearing(true);
+    try {
+      await clearAllNotificationsApi();
+      setShowClearModal(false);
+      if (onClearAll) onClearAll();
+    } catch (err) {
+      console.error("Failed to clear notifications:", err);
+      alert("Failed to clear notifications.");
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
+  const handleClearSingle = async (id: string) => {
+    try {
+      await clearSingleNotificationApi(id);
+      if (onClearSingle) onClearSingle(id);
+    } catch (err) {
+      console.error("Failed to clear single notification:", err);
+    }
+  };
+
+  const renderWhatsAppStatusBadge = (status?: string) => {
+    const s = (status || 'NOT_CONFIGURED').toUpperCase();
+    if (s === 'SENT') {
+      return (
+        <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center space-x-1">
+          <Check className="w-3 h-3 text-emerald-600" />
+          <span>WhatsApp ✓ Sent</span>
+        </span>
+      );
+    }
+    if (s === 'DELIVERED') {
+      return (
+        <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center space-x-1">
+          <CheckCheck className="w-3 h-3 text-emerald-700" />
+          <span>WhatsApp ✓ Delivered</span>
+        </span>
+      );
+    }
+    if (s === 'READ') {
+      return (
+        <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-blue-100 text-blue-900 border border-blue-300 flex items-center space-x-1">
+          <CheckCheck className="w-3 h-3 text-blue-700" />
+          <span>WhatsApp ✓ Read</span>
+        </span>
+      );
+    }
+    if (s === 'FAILED') {
+      return (
+        <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-rose-50 text-rose-800 border border-rose-200 flex items-center space-x-1">
+          <X className="w-3 h-3 text-rose-600" />
+          <span>WhatsApp ✕ Failed</span>
+        </span>
+      );
+    }
+    return (
+      <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-amber-50 text-amber-900 border border-amber-200 flex items-center space-x-1">
+        <AlertCircle className="w-3 h-3 text-amber-600" />
+        <span>WhatsApp ⚠ Not configured</span>
+      </span>
+    );
+  };
+
   const getNotificationBadge = (type: string) => {
     switch (type) {
       case 'NEW_SERVICE_REQUEST':
         return {
-          icon: <Bell className="w-5 h-5 text-blue-600" />,
+          icon: <Bell className="w-4 h-4 text-blue-600" />,
           bgColor: 'bg-blue-50 border-blue-200 text-blue-900',
           label: 'New Request'
         };
       case 'QUOTE_RECEIVED':
         return {
-          icon: <DollarSign className="w-5 h-5 text-emerald-600" />,
+          icon: <DollarSign className="w-4 h-4 text-emerald-600" />,
           bgColor: 'bg-emerald-50 border-emerald-200 text-emerald-900',
           label: 'Quote Update'
         };
       case 'REQUEST_ACCEPTED':
         return {
-          icon: <Check className="w-5 h-5 text-emerald-600" />,
+          icon: <Check className="w-4 h-4 text-emerald-600" />,
           bgColor: 'bg-emerald-50 border-emerald-200 text-emerald-900',
           label: 'Accepted'
         };
       case 'PAYMENT_CONFIRMED':
         return {
-          icon: <Award className="w-5 h-5 text-amber-600" />,
+          icon: <Award className="w-4 h-4 text-amber-600" />,
           bgColor: 'bg-amber-50 border-amber-200 text-amber-900',
           label: 'Payment Confirmed'
         };
       case 'OPPORTUNITY_SUGGESTION':
         return {
-          icon: <Sparkles className="w-5 h-5 text-purple-600" />,
+          icon: <Sparkles className="w-4 h-4 text-purple-600" />,
           bgColor: 'bg-purple-50 border-purple-200 text-purple-900',
           label: 'AI Livelihood Opportunity'
         };
       case 'NEW_REVIEW':
         return {
-          icon: <MessageSquare className="w-5 h-5 text-amber-600" />,
+          icon: <MessageSquare className="w-4 h-4 text-amber-600" />,
           bgColor: 'bg-amber-50 border-amber-200 text-amber-900',
           label: 'Customer Review'
         };
       default:
         return {
-          icon: <Info className="w-5 h-5 text-blue-600" />,
+          icon: <Info className="w-4 h-4 text-blue-600" />,
           bgColor: 'bg-slate-50 border-slate-200 text-slate-900',
           label: 'SilverHands Alert'
         };
@@ -110,21 +186,62 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
               )}
             </div>
             <div>
-              <h2 className="text-xl sm:text-2xl font-black tracking-tight">SilverHands Alerts</h2>
-              <p className="text-blue-100 text-xs font-medium">Proactive In-App & WhatsApp Notifications</p>
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight">{t.title}</h2>
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            aria-label="Close notification panel"
-            className="p-2 rounded-xl bg-blue-800/60 hover:bg-blue-800 text-white cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center border border-blue-400/30"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center space-x-2">
+            {notifications.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowClearModal(true)}
+                className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs flex items-center space-x-1 cursor-pointer transition shadow-xs"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Clear All</span>
+              </button>
+            )}
+
+            <button
+              onClick={onClose}
+              aria-label="Close notification panel"
+              className="p-2 rounded-xl bg-blue-800/60 hover:bg-blue-800 text-white cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center border border-blue-400/30"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
-        {/* View Tab Selector (In-App vs WhatsApp Demo Preview) */}
+        {/* Clear All Confirmation Modal */}
+        {showClearModal && (
+          <div className="p-4 bg-rose-50 border-b-2 border-rose-200 text-rose-950 space-y-3 animate-in fade-in">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />
+              <span className="text-xs font-black">
+                Clear all notifications? This will clear all alerts from your list.
+              </span>
+            </div>
+            <div className="flex items-center space-x-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowClearModal(false)}
+                className="px-4 py-2 rounded-xl bg-white border border-rose-200 text-rose-900 font-extrabold text-xs hover:bg-rose-100 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmClearAll}
+                disabled={isClearing}
+                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-md transition cursor-pointer"
+              >
+                {isClearing ? 'Clearing...' : 'Clear All'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* View Tab Selector */}
         <div className="bg-slate-100 p-2 border-b border-slate-200 flex items-center justify-between gap-2">
           <div className="flex bg-slate-200/80 p-1 rounded-xl w-full border border-slate-300">
             <button
@@ -136,26 +253,14 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
               }`}
             >
               <Bell className="w-4 h-4" />
-              <span>In-App Cards ({notifications.length})</span>
-            </button>
-
-            <button
-              onClick={() => setViewTab('whatsapp')}
-              className={`flex-1 py-2 px-3 rounded-lg text-xs font-extrabold transition-all cursor-pointer min-h-[40px] flex items-center justify-center space-x-1.5 ${
-                viewTab === 'whatsapp'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-slate-700 hover:text-slate-900'
-              }`}
-            >
-              <MessageSquare className="w-4 h-4 text-emerald-300" />
-              <span>📱 WhatsApp Preview</span>
+              <span>Notifications ({notifications.length})</span>
             </button>
           </div>
         </div>
 
         {/* Action Bar */}
         <div className="px-5 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs font-bold text-slate-700">
-          <span>{unreadCount > 0 ? `${unreadCount} Unread Alert${unreadCount > 1 ? 's' : ''}` : 'All caught up!'}</span>
+          <span>{unreadCount > 0 ? `${unreadCount} unread` : 'All read'}</span>
 
           {unreadCount > 0 && viewTab === 'inapp' && (
             <button
@@ -163,7 +268,7 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
               className="text-blue-700 hover:text-blue-900 font-extrabold flex items-center space-x-1 cursor-pointer min-h-[36px]"
             >
               <CheckCheck className="w-4 h-4 text-blue-600" />
-              <span>Mark All Read</span>
+              <span>{t.markAllRead}</span>
             </button>
           )}
         </div>
@@ -175,7 +280,7 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
               <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto border border-blue-100">
                 <Bell className="w-8 h-8 text-blue-500" />
               </div>
-              <h3 className="text-lg font-extrabold text-slate-800">No Notifications Yet</h3>
+              <h3 className="text-lg font-extrabold text-slate-800">No Notifications</h3>
               <p className="text-xs text-slate-600 max-w-xs mx-auto leading-relaxed">
                 When local customers request your services or AI finds new livelihood opportunities, alerts will appear here.
               </p>
@@ -183,7 +288,7 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
           ) : viewTab === 'whatsapp' ? (
             <div className="space-y-6">
               <p className="text-xs font-bold text-slate-600 text-center bg-emerald-50 text-emerald-900 p-2.5 rounded-xl border border-emerald-200">
-                📱 Live WhatsApp Simulation Layer: Demonstrates how senior citizens receive WhatsApp alerts on their mobile phone.
+                📱 Real WhatsApp Integration Status Layer
               </p>
               {notifications.map((notif) => (
                 <WhatsAppNotificationPreview
@@ -193,7 +298,7 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
                   recipientPhone={userPhone}
                   onOpenApp={(reqId) => {
                     if (!notif.is_read) onMarkAsRead(notif.id);
-                    if (onNavigateToRequest) onNavigateToRequest(reqId || notif.related_request_id);
+                    if (onNavigateToRequest) onNavigateToRequest(reqId || notif.related_request_id || undefined);
                     onClose();
                   }}
                 />
@@ -211,20 +316,33 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
                       : 'bg-slate-50/80 border-slate-200 opacity-90'
                   }`}
                 >
-                  {/* Top Badge & Read Indicator */}
+                  {/* Top Badge & Read / Clear Controls */}
                   <div className="flex items-center justify-between gap-2">
-                    <span className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border ${badge.bgColor}`}>
-                      {badge.icon}
-                      <span>{badge.label}</span>
-                    </span>
+                    <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                      <span className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${badge.bgColor}`}>
+                        {badge.icon}
+                        <span>{badge.label}</span>
+                      </span>
+                      {renderWhatsAppStatusBadge(notif.whatsapp_status || undefined)}
+                    </div>
 
                     <div className="flex items-center space-x-2">
-                      <span className="text-[11px] font-bold text-slate-600">
+                      <span className="text-[11px] font-bold text-slate-500">
                         {formatTimestamp(notif.created_at)}
                       </span>
                       {!notif.is_read && (
                         <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse" title="Unread"></span>
                       )}
+
+                      {/* Individual Clear Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleClearSingle(notif.id)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                        title="Clear Notification"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
 
@@ -244,7 +362,7 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
                       <button
                         onClick={() => {
                           if (!notif.is_read) onMarkAsRead(notif.id);
-                          if (onNavigateToRequest) onNavigateToRequest(notif.related_request_id);
+                          if (onNavigateToRequest) onNavigateToRequest(notif.related_request_id || undefined);
                           onClose();
                         }}
                         className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs flex items-center space-x-1.5 cursor-pointer shadow-xs min-h-[44px]"
@@ -274,7 +392,8 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
 
         {/* Footer */}
         <div className="p-4 bg-slate-100 border-t border-slate-200 text-center text-xs font-bold text-slate-600 flex items-center justify-center space-x-2">
-          <span>📱 Connected to WhatsApp Proactive Alert Engine</span>
+          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+          <span>Meta WhatsApp Cloud API Pipeline Enabled</span>
         </div>
       </div>
     </div>

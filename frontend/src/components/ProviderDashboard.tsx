@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, CheckCircle2, UserCheck, RefreshCw, Send, AlertCircle, Edit3, Eye, EyeOff, Bell, PlusCircle, ShieldCheck, Calendar, Clock, Trash2, Plus, X, MapPin, TrendingUp, Lightbulb } from 'lucide-react';
-import { analyzeSkills, generateProfile, registerProvider, fetchIncomingSeniorRequests, updatePublishingStatus, deleteMyAccountApi, markProfileSetupCompleteApi, fetchSeniorDashboardStatsApi, incrementalUpdateProfileApi, fetchMyOpportunitiesApi, fetchMyProviderProfile, type SeniorDashboardStats } from '../services/api';
+import { Sparkles, CheckCircle2, UserCheck, RefreshCw, Send, AlertCircle, Edit3, Eye, EyeOff, Bell, PlusCircle, ShieldCheck, Calendar, Clock, Trash2, Plus, X, MapPin, TrendingUp, Lightbulb, Mic } from 'lucide-react';
+import { analyzeSkills, generateProfile, registerProvider, fetchIncomingSeniorRequests, updatePublishingStatus, deleteMyAccountApi, markProfileSetupCompleteApi, fetchSeniorDashboardStatsApi, incrementalUpdateProfileApi, fetchMyOpportunitiesApi, fetchMyProviderProfile, updateMyLocationApi, type SeniorDashboardStats } from '../services/api';
 import { getStoredLocalAuthSession } from '../services/supabase';
 import type { SkillAnalysisResult, ProfileGenerationResult, ProviderProfile, ProfileStatus, SeniorOpportunitiesResponse } from '../types';
 import { VoiceInputButton } from './VoiceInputButton';
+import { LocationPicker } from './LocationPicker';
 import { ProfileCompletion } from './ProfileCompletion';
 import { OpportunitySuggestions } from './OpportunitySuggestions';
 import { ProfileUpdateSection } from './ProfileUpdateSection';
 import { IncomingRequestsSection } from './IncomingRequestsSection';
+import { AIInterviewRoom } from './AIInterviewRoom';
 import { translations, type Language } from '../i18n';
 
 interface ProviderDashboardProps {
@@ -27,6 +29,8 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({
 }) => {
   const t = translations[language].provider;
   const [activeTab, setActiveTab] = useState<'create' | 'update' | 'requests' | 'profile'>(activeSubTab);
+  const [showAiInterviewModal, setShowAiInterviewModal] = useState(false);
+  const [aiInterviewMode, setAiInterviewMode] = useState<'REGISTRATION' | 'UPDATE'>('REGISTRATION');
 
   useEffect(() => {
     if (activeSubTab) setActiveTab(activeSubTab);
@@ -73,7 +77,8 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({
     return u?.location || '';
   });
   const [providerBio, setProviderBio] = useState('');
-  const [providerLanguages, setProviderLanguages] = useState<string>('');
+  const [providerLanguages, setProviderLanguages] = useState('Tamil, English');
+  const [serviceDeliveryMode, setServiceDeliveryMode] = useState<'IN_PERSON' | 'ONLINE' | 'BOTH'>('BOTH');
 
   const [activeProfile, setActiveProfile] = useState<ProviderProfile | null>(null);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
@@ -317,6 +322,7 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({
         languages: providerLanguages,
         target_age_group: analysisResult.target_age_group || undefined,
         availability: undefined,
+        service_delivery_mode: serviceDeliveryMode,
         skills: analysisResult.skills,
         services: listUnique(finalServices)
       });
@@ -468,6 +474,36 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({
             </div>
           )}
 
+          {/* AI Skill Interview Room Action Banner */}
+          <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 rounded-3xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-indigo-700/50">
+            <div className="flex items-center space-x-4">
+              <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md text-amber-300 flex items-center justify-center font-black text-2xl flex-shrink-0 border border-white/20">
+                <Sparkles className="w-7 h-7" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full">
+                    Interactive AI Tool
+                  </span>
+                  <span className="text-xs font-bold text-indigo-200">Voice & Text Enabled</span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-black text-white">
+                  Take the AI Skill Interview
+                </h3>
+                <p className="text-xs text-indigo-100 font-semibold max-w-lg">
+                  Answer 3-5 conversational questions about your practical expertise. AI extracts your verified skills and services for human approval.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowAiInterviewModal(true)}
+              className="py-3.5 px-6 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs transition-all shadow-md cursor-pointer flex items-center space-x-2 whitespace-nowrap self-start sm:self-auto min-h-[48px]"
+            >
+              <Sparkles className="w-4 h-4 text-slate-950" />
+              <span>START AI INTERVIEW NOW</span>
+            </button>
+          </div>
+
           {/* Live Upcoming Services Section */}
           <div className="bg-white rounded-3xl p-6 border border-blue-100 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-blue-100 pb-3">
@@ -612,6 +648,18 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({
                         </span>
                       </div>
 
+                      <div className="flex flex-wrap gap-2 text-[11px] font-extrabold">
+                        <span className="bg-amber-50 text-amber-900 px-2.5 py-1 rounded-lg border border-amber-200">
+                          🔥 {opp.demand_count || 3} customer requests in your area
+                        </span>
+                        <span className="bg-emerald-50 text-emerald-900 px-2.5 py-1 rounded-lg border border-emerald-200">
+                          ⚡ Skill Match: {opp.match_score || 85}%
+                        </span>
+                        <span className="bg-blue-50 text-blue-900 px-2.5 py-1 rounded-lg border border-blue-200">
+                          💰 Est. Earning: ₹{(opp.estimated_earning || 2500).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+
                       <p className="text-xs font-semibold text-zinc-700 leading-relaxed">{opp.reason}</p>
 
                       {opp.matched_skills && opp.matched_skills.length > 0 && (
@@ -682,6 +730,57 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({
                 <h3 className="text-xl font-extrabold text-zinc-900">{t.step1Title}</h3>
                 <p className="text-xs text-zinc-500 font-medium">{t.step1Subtitle}</p>
               </div>
+            </div>
+
+            {/* Location Detection Section */}
+            <LocationPicker
+              initialLocation={providerLocation}
+              onLocationDetected={(locData) => {
+                setProviderLocation(locData.readable_address);
+                updateMyLocationApi({
+                  latitude: locData.latitude,
+                  longitude: locData.longitude,
+                  city: locData.city,
+                  state: locData.state,
+                  country: locData.country,
+                  readable_address: locData.readable_address
+                }).catch(err => console.error("Location sync error:", err));
+              }}
+            />
+
+            {/* Primary Recommended Option: Talk to AI Skill Interviewer */}
+            <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 rounded-3xl p-6 text-white shadow-lg space-y-4 border border-indigo-700/50">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center space-x-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md text-amber-300 flex items-center justify-center font-black text-xl border border-white/20">
+                    <Mic className="w-6 h-6 text-amber-300" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full inline-block mb-1">
+                      Recommended Experience
+                    </span>
+                    <h4 className="text-lg font-black text-white">Talk to our AI Skill Interviewer</h4>
+                    <p className="text-xs text-indigo-100 font-semibold">Answer dynamic voice questions in Tamil, Hindi, or English</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAiInterviewMode('REGISTRATION');
+                    setShowAiInterviewModal(true);
+                  }}
+                  className="py-3.5 px-6 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs transition-all shadow-md cursor-pointer flex items-center justify-center space-x-2 whitespace-nowrap self-start sm:self-auto min-h-[48px]"
+                >
+                  <Sparkles className="w-4 h-4 text-slate-950" />
+                  <span>START VOICE INTERVIEW NOW</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="relative flex py-1 items-center">
+              <div className="flex-grow border-t border-slate-200"></div>
+              <span className="flex-shrink mx-4 text-xs font-black text-slate-400 uppercase tracking-widest">or Describe Skills Manually Below</span>
+              <div className="flex-grow border-t border-slate-200"></div>
             </div>
 
             <VoiceInputButton
@@ -1098,6 +1197,36 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({
                     draftExperience={analysisResult.experience_years}
                   />
 
+                  {/* How would you like to provide your services? */}
+                  <div className="space-y-3 p-5 rounded-3xl bg-blue-50/70 border-2 border-blue-200">
+                    <label className="block text-xs font-black uppercase text-blue-950 tracking-wider">
+                      How would you like to provide your services?
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {[
+                        { id: 'IN_PERSON', label: '📍 In Person', desc: 'On-site visits only' },
+                        { id: 'ONLINE', label: '💻 Online / Virtual', desc: 'Virtual Live Room enabled' },
+                        { id: 'BOTH', label: '🌐 Both Modes', desc: 'Flexible In-Person & Virtual' }
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setServiceDeliveryMode(item.id as any)}
+                          className={`p-3.5 rounded-2xl border-2 text-left transition cursor-pointer flex flex-col justify-between ${
+                            serviceDeliveryMode === item.id
+                              ? 'bg-blue-700 border-blue-800 text-white shadow-md ring-2 ring-blue-300'
+                              : 'bg-white border-slate-200 text-slate-800 hover:border-blue-300'
+                          }`}
+                        >
+                          <span className="text-xs font-black">{item.label}</span>
+                          <span className={`text-[10px] font-bold mt-1 ${serviceDeliveryMode === item.id ? 'text-blue-100' : 'text-slate-500'}`}>
+                            {item.desc}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <button
                     type="submit"
                     disabled={isSaving || !providerName.trim() || !providerEmail.trim()}
@@ -1201,7 +1330,12 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({
             <ProfileUpdateSection
               currentProfile={activeProfile}
               pendingSuggestedService={pendingSuggestedService}
+              language={language}
               onClearPendingSuggestedService={() => setPendingSuggestedService(null)}
+              onTriggerAiInterview={(mode) => {
+                setAiInterviewMode(mode);
+                setShowAiInterviewModal(true);
+              }}
               onProfileUpdated={async (updated) => {
                 setActiveProfile(updated);
                 setPendingSuggestedService(null);
@@ -1469,6 +1603,15 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* AI Skill Interview Room Modal */}
+      {showAiInterviewModal && (
+        <AIInterviewRoom
+          initialSessionType={aiInterviewMode}
+          onClose={() => setShowAiInterviewModal(false)}
+          onProfileUpdated={loadDashboardStats}
+        />
       )}
 
     </div>

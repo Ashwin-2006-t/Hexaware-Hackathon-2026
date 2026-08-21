@@ -16,22 +16,33 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
   onSelectProvider
 }) => {
   const t = translations[language].customer;
-  const [query, setQuery] = useState('I need homemade Tamil sweets for a wedding function');
+  const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string>('');
   const [location, setLocation] = useState('Chennai, Tamil Nadu');
+  const [radiusKm, setRadiusKm] = useState<number>(10);
   const [isSearching, setIsSearching] = useState(false);
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const tm = translations[language].marketplace;
+
   const categories = [
-    { label: 'All Services', value: '' },
-    { label: 'Food & Catering', value: 'Food & Catering' },
-    { label: 'Tailoring & Craft', value: 'Tailoring & Handicrafts' },
-    { label: 'Hindi & Math Tutoring', value: 'Education & Tutoring' },
-    { label: 'Arts & Culture', value: 'Arts & Culture' },
-    { label: 'Terrace Gardening', value: 'Gardening & Home Care' },
-    { label: 'Childcare & Stories', value: 'Childcare & Eldercare' }
+    { label: tm.allServices, value: '' },
+    { label: tm.foodCatering, value: 'Food & Catering' },
+    { label: tm.tailoringCraft, value: 'Tailoring & Handicrafts' },
+    { label: tm.educationTutoring, value: 'Education & Tutoring' },
+    { label: tm.artsCulture, value: 'Arts & Culture' },
+    { label: tm.terraceGardening, value: 'Gardening & Home Care' },
+    { label: tm.childcareEldercare, value: 'Childcare & Eldercare' }
+  ];
+
+  const radiusOptions = [
+    { label: '5 km', value: 5 },
+    { label: '10 km', value: 10 },
+    { label: '20 km', value: 20 },
+    { label: '50 km', value: 50 },
+    { label: 'All', value: 0 }
   ];
 
   const quickSearchQueries = [
@@ -44,19 +55,16 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!query.trim()) {
-      setErrorMessage("Please enter a service requirement or select a category.");
-      return;
-    }
     setErrorMessage(null);
     setIsSearching(true);
     try {
       const results = await searchMatches({
-        query,
+        query: query.trim(),
         category: category || undefined,
         location,
         latitude: 13.0827,
-        longitude: 80.2707
+        longitude: 80.2707,
+        radius_km: radiusKm > 0 ? radiusKm : undefined
       });
       setMatches(results);
       setHasSearched(true);
@@ -70,7 +78,7 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
 
   useEffect(() => {
     handleSearch();
-  }, []);
+  }, [category, radiusKm]);
 
   return (
     <div className="space-y-8 py-4">
@@ -114,7 +122,7 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
             
             {/* Search Query Input */}
-            <div className="md:col-span-8">
+            <div className="md:col-span-6">
               <label className="block text-xs font-extrabold text-zinc-700 uppercase tracking-wider mb-1">
                 {t.queryLabel}
               </label>
@@ -131,7 +139,7 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
             </div>
 
             {/* Location Input */}
-            <div className="md:col-span-4">
+            <div className="md:col-span-3">
               <label className="block text-xs font-extrabold text-zinc-700 uppercase tracking-wider mb-1">
                 {t.locationLabel}
               </label>
@@ -145,6 +153,24 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
                 />
                 <MapPin className="w-5 h-5 text-blue-600 absolute left-4 top-4" />
               </div>
+            </div>
+
+            {/* Search Radius Input */}
+            <div className="md:col-span-3">
+              <label className="block text-xs font-extrabold text-zinc-700 uppercase tracking-wider mb-1">
+                Search Radius:
+              </label>
+              <select
+                value={radiusKm}
+                onChange={(e) => setRadiusKm(Number(e.target.value))}
+                className="w-full px-4 py-4 rounded-2xl border-2 border-blue-100 focus:border-blue-600 text-base font-bold text-zinc-900 bg-white cursor-pointer"
+              >
+                {radiusOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label === 'All' ? 'All (No Radius Limit)' : `Within ${opt.label}`}
+                  </option>
+                ))}
+              </select>
             </div>
 
           </div>
@@ -203,7 +229,7 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
           {/* Find Matches Action Button */}
           <button
             type="submit"
-            disabled={isSearching || !query.trim()}
+            disabled={isSearching}
             className="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-extrabold text-lg flex items-center justify-center space-x-2 transition-all shadow-md cursor-pointer min-h-[56px]"
           >
             {isSearching ? (
@@ -227,6 +253,7 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
         matches={matches}
         hasSearched={hasSearched}
         isSearching={isSearching}
+        language={language}
         onSelectProvider={onSelectProvider}
       />
 

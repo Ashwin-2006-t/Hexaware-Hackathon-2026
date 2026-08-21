@@ -1,15 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, CheckCircle2, XCircle, Clock, MapPin, Calendar, RefreshCw, AlertCircle, Calculator, Check } from 'lucide-react';
+import { Bell, CheckCircle2, XCircle, Clock, MapPin, Calendar, RefreshCw, AlertCircle, Calculator, Check, Video, Phone } from 'lucide-react';
 import type { ServiceRequest, RequestStatus } from '../types';
 import { fetchIncomingSeniorRequests, updateRequestStatus, seniorConfirmPaymentReceivedApi } from '../services/api';
 import { SeniorQuoteModal } from './SeniorQuoteModal';
+import { VirtualRoomModal } from './VirtualRoomModal';
+import { CallActionModal } from './CallActionModal';
 
-export const IncomingRequestsSection: React.FC = () => {
+import { translations, type Language } from '../i18n';
+
+interface IncomingRequestsSectionProps {
+  language?: Language;
+}
+
+export const IncomingRequestsSection: React.FC<IncomingRequestsSectionProps> = ({ language = 'en' }) => {
+  const t = translations[language].incoming;
+  const tc = translations[language].common;
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedQuoteReq, setSelectedQuoteReq] = useState<ServiceRequest | null>(null);
+  const [activeVirtualRoomBookingId, setActiveVirtualRoomBookingId] = useState<string | null>(null);
+  const [activeCallRequestId, setActiveCallRequestId] = useState<string | null>(null);
 
   const loadRequests = async () => {
     setIsLoading(true);
@@ -53,10 +65,10 @@ export const IncomingRequestsSection: React.FC = () => {
           </div>
           <div>
             <h3 className="text-xl sm:text-2xl font-extrabold text-zinc-900">
-              Incoming Customer Requests
+              {t.title}
             </h3>
             <p className="text-xs text-zinc-500 font-semibold">
-              Service requests sent directly to your SilverHands provider profile
+              {t.subtitle}
             </p>
           </div>
         </div>
@@ -65,7 +77,7 @@ export const IncomingRequestsSection: React.FC = () => {
           onClick={loadRequests}
           disabled={isLoading}
           className="p-2.5 rounded-xl border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors cursor-pointer"
-          title="Refresh Incoming Requests"
+          title={t.refreshTooltip}
         >
           <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
         </button>
@@ -82,14 +94,14 @@ export const IncomingRequestsSection: React.FC = () => {
       {isLoading ? (
         <div className="py-12 text-center text-zinc-500 font-medium space-y-2">
           <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-600" />
-          <p>Loading customer requests...</p>
+          <p>{tc.loading}</p>
         </div>
       ) : requests.length === 0 ? (
         <div className="py-12 text-center bg-blue-50/40 rounded-2xl border border-dashed border-blue-200 space-y-3">
           <Clock className="w-10 h-10 text-blue-400 mx-auto" />
-          <h4 className="text-lg font-bold text-zinc-800">No Pending Customer Requests Yet</h4>
+          <h4 className="text-lg font-bold text-zinc-800">{t.noRequestsTitle}</h4>
           <p className="text-xs text-zinc-500 max-w-md mx-auto">
-            When local neighbors request your skills, they will appear here. Ensure your profile is published and availability is up to date!
+            {t.noRequestsSub}
           </p>
         </div>
       ) : (
@@ -207,6 +219,26 @@ export const IncomingRequestsSection: React.FC = () => {
                 )}
 
                 {/* Action buttons */}
+                <div className="flex flex-wrap items-center gap-2 pt-2">
+                  <button
+                    onClick={() => setActiveCallRequestId(req.id)}
+                    className="py-2.5 px-4 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-900 font-extrabold text-xs flex items-center space-x-1.5 transition cursor-pointer"
+                  >
+                    <Phone className="w-4 h-4 text-emerald-600" />
+                    <span>Call Customer</span>
+                  </button>
+
+                  {(isAccepted || req.status === 'COMPLETED') && req.delivery_mode !== 'IN_PERSON' && (
+                    <button
+                      onClick={() => setActiveVirtualRoomBookingId(req.id)}
+                      className="py-2.5 px-4 rounded-xl bg-blue-900 hover:bg-blue-950 text-white font-extrabold text-xs flex items-center space-x-1.5 transition cursor-pointer"
+                    >
+                      <Video className="w-4 h-4 text-blue-300" />
+                      <span>Join Virtual Tuition Class</span>
+                    </button>
+                  )}
+                </div>
+
                 {isPending && (
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-2 w-full">
                     <button
@@ -246,9 +278,26 @@ export const IncomingRequestsSection: React.FC = () => {
         </div>
       )}
 
+      {/* Virtual Room Modal */}
+      {activeVirtualRoomBookingId && (
+        <VirtualRoomModal
+          bookingId={activeVirtualRoomBookingId}
+          onClose={() => setActiveVirtualRoomBookingId(null)}
+        />
+      )}
+
+      {/* Call Action Modal */}
+      {activeCallRequestId && (
+        <CallActionModal
+          requestId={activeCallRequestId}
+          onClose={() => setActiveCallRequestId(null)}
+        />
+      )}
+
       {/* Senior Quote Modal */}
       {selectedQuoteReq && (
         <SeniorQuoteModal
+          language={language}
           request={selectedQuoteReq}
           onClose={() => setSelectedQuoteReq(null)}
           onQuoteSent={() => {

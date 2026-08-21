@@ -6,28 +6,7 @@ from app.models.domain import Notification, User, ServiceRequest
 
 logger = logging.getLogger("silverhands.notifications")
 
-class WhatsAppNotificationProvider:
-    """
-    Demo-ready WhatsApp Notification Provider abstraction.
-    Simulates sending messages via WhatsApp Cloud API / Twilio WhatsApp API.
-    Can be easily connected to Meta WhatsApp API or Twilio in production.
-    """
-    @staticmethod
-    def send_message(phone_number: str, message: str) -> Dict[str, Any]:
-        timestamp = datetime.utcnow().isoformat()
-        log_entry = f"[WhatsApp Mock Delivery] To: {phone_number} | Time: {timestamp}\nMessage:\n{message}"
-        try:
-            print(log_entry)
-        except Exception:
-            print(log_entry.encode("ascii", "replace").decode("ascii"))
-        logger.info(log_entry)
-        return {
-            "status": "SENT",
-            "provider": "MockWhatsAppCloudAPI",
-            "to": phone_number,
-            "timestamp": timestamp,
-            "message_snippet": message[:100]
-        }
+from app.services.whatsapp_service import send_whatsapp_cloud_api
 
 class InAppNotificationProvider:
     """
@@ -58,7 +37,7 @@ class InAppNotificationProvider:
 
 class NotificationService:
     """
-    Unified Notification Service orchestrating In-App and WhatsApp notifications.
+    Unified Notification Service orchestrating In-App and real WhatsApp Cloud API notifications.
     """
     @staticmethod
     def notify_user(
@@ -86,17 +65,21 @@ class NotificationService:
             if user:
                 phone_number = user.phone
 
-        # 3. Trigger WhatsApp Notification Simulation & Persist Log to DB
+        # 3. Trigger WhatsApp Cloud API & Persist Detailed Delivery Log to DB
         whatsapp_result = None
         if phone_number:
             whatsapp_text = f"🔔 *SilverHands Alert*\n\n*{title}*\n\n{message}\n\n[Open SilverHands App to respond]"
-            whatsapp_result = WhatsAppNotificationProvider.send_message(phone_number, whatsapp_text)
+            whatsapp_result = send_whatsapp_cloud_api(phone_number, whatsapp_text)
 
-            # Persist WhatsApp Delivery Log in DB
-            in_app.whatsapp_status = "SENT (DEMO)"
+            # Persist WhatsApp Delivery Status & Message ID in DB
+            in_app.whatsapp_message_id = whatsapp_result.get("message_id")
+            in_app.whatsapp_recipient = whatsapp_result.get("recipient")
+            in_app.whatsapp_type = "text"
+            in_app.whatsapp_status = whatsapp_result.get("status")  # 'SENT', 'FAILED', or 'NOT_CONFIGURED'
             in_app.whatsapp_phone = phone_number
             in_app.whatsapp_message = whatsapp_text
-            in_app.whatsapp_sent_at = datetime.utcnow()
+            in_app.whatsapp_sent_at = datetime.utcnow() if whatsapp_result.get("success") else None
+            in_app.whatsapp_error_details = whatsapp_result.get("error_details")
             db.commit()
             db.refresh(in_app)
 
@@ -110,6 +93,7 @@ class NotificationService:
             "whatsapp_phone": in_app.whatsapp_phone,
             "whatsapp_message": in_app.whatsapp_message,
             "whatsapp_sent_at": in_app.whatsapp_sent_at.isoformat() if in_app.whatsapp_sent_at else None,
+            "whatsapp_error_details": in_app.whatsapp_error_details,
             "created_at": in_app.created_at.isoformat(),
             "whatsapp_delivery": whatsapp_result
         }

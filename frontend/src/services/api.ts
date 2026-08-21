@@ -159,6 +159,7 @@ export async function registerProvider(data: {
   languages?: string;
   target_age_group?: string;
   availability?: string;
+  service_delivery_mode?: string;
   skills: string[];
   services: string[];
   userId?: string;
@@ -247,6 +248,7 @@ export async function searchMatches(data: {
   location?: string;
   latitude?: number;
   longitude?: number;
+  radius_km?: number;
 }): Promise<MatchResult[]> {
   const res = await fetch(`${API_BASE}/matches`, {
     method: 'POST',
@@ -558,6 +560,218 @@ export async function markAllNotificationsReadApi(): Promise<{ message: string }
     headers: getAuthHeaders()
   });
   if (!res.ok) throw new Error('Failed to mark all notifications as read');
+  return res.json();
+}
+
+// Virtual Room APIs
+export async function createOrJoinVirtualRoomApi(bookingId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/virtual-rooms/create`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ booking_id: bookingId })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to access virtual room' }));
+    throw new Error(err.detail || 'Failed to access virtual room');
+  }
+  return res.json();
+}
+
+export async function fetchVirtualRoomApi(roomId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/virtual-rooms/${roomId}`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error('Failed to fetch virtual room details');
+  return res.json();
+}
+
+export async function sendVirtualRoomMessageApi(roomId: string, content: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/virtual-rooms/${roomId}/messages`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ content })
+  });
+  if (!res.ok) throw new Error('Failed to send room chat message');
+  return res.json();
+}
+
+export async function endVirtualRoomSessionApi(roomId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/virtual-rooms/${roomId}/end`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error('Failed to end virtual room session');
+  return res.json();
+}
+
+// Service Call APIs
+export async function initiateServiceCallApi(requestId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/calls/initiate`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ request_id: requestId })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to initiate call' }));
+    throw new Error(err.detail || 'Failed to initiate call');
+  }
+  return res.json();
+}
+
+export async function endServiceCallApi(callId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/calls/${callId}/end`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error('Failed to end call session');
+  return res.json();
+}
+
+export async function fetchCallHistoryApi(): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/calls/history`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+// ------------------------------------------------------------------
+// AI SKILL INTERVIEW ROOM API METHODS
+// ------------------------------------------------------------------
+
+export async function startAIInterviewApi(
+  selectedDomain: string, 
+  selectedSkill: string,
+  sessionType: 'REGISTRATION' | 'UPDATE' = 'REGISTRATION',
+  language: 'en' | 'ta' | 'hi' = 'en'
+): Promise<any> {
+  const res = await fetch(`${API_BASE}/v1/ai/interview/start`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      selected_domain: selectedDomain,
+      selected_skill: selectedSkill,
+      session_type: sessionType,
+      language: language
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to start AI interview' }));
+    throw new Error(err.detail || 'Failed to start AI interview');
+  }
+  return res.json();
+}
+
+export async function answerAIInterviewQuestionApi(
+  sessionId: string,
+  answer: string,
+  inputType: 'TEXT' | 'VOICE' = 'TEXT'
+): Promise<any> {
+  const res = await fetch(`${API_BASE}/v1/ai/interview/${sessionId}/answer`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      answer,
+      input_type: inputType
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to submit answer' }));
+    throw new Error(err.detail || 'Failed to submit answer');
+  }
+  return res.json();
+}
+
+export async function completeAIInterviewApi(sessionId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/v1/ai/interview/${sessionId}/complete`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to complete AI interview' }));
+    throw new Error(err.detail || 'Failed to complete AI interview');
+  }
+  return res.json();
+}
+
+export async function fetchAIInterviewSessionApi(sessionId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/v1/ai/interview/${sessionId}`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error('Failed to fetch interview session');
+  return res.json();
+}
+
+export async function fetchMyAIInterviewsApi(): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/v1/ai/interview/my-interviews`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function approveAIInterviewProfileApi(
+  sessionId: string,
+  payload: {
+    approved_skills: string[];
+    approved_services: any[];
+    experience_years?: number;
+    bio_summary?: string;
+  }
+): Promise<any> {
+  const res = await fetch(`${API_BASE}/v1/ai/interview/${sessionId}/approve-profile`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to approve and save profile' }));
+    throw new Error(err.detail || 'Failed to approve and save profile');
+  }
+  return res.json();
+}
+
+export async function updateMyLocationApi(payload: {
+  latitude: number;
+  longitude: number;
+  city?: string;
+  state?: string;
+  country?: string;
+  readable_address?: string;
+}): Promise<any> {
+  const res = await fetch(`${API_BASE}/providers/me/location`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to update location' }));
+    throw new Error(err.detail || 'Failed to update location');
+  }
+  return res.json();
+}
+
+export async function clearAllNotificationsApi(): Promise<{ success: boolean; cleared_count: number }> {
+  const res = await fetch(`${API_BASE}/notifications/me`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to clear notifications' }));
+    throw new Error(err.detail || 'Failed to clear notifications');
+  }
+  return res.json();
+}
+
+export async function clearSingleNotificationApi(id: string): Promise<{ success: boolean; id: string }> {
+  const res = await fetch(`${API_BASE}/notifications/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to clear notification' }));
+    throw new Error(err.detail || 'Failed to clear notification');
+  }
   return res.json();
 }
 

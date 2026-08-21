@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Star, MapPin, CheckCircle2, Sparkles, Map, ListFilter, Clock, ShieldCheck, HeartHandshake } from 'lucide-react';
+import { Star, MapPin, CheckCircle2, Sparkles, Map, ListFilter, ShieldCheck, HeartHandshake } from 'lucide-react';
 import type { MatchResult } from '../types';
 import { MapView } from './MapView';
+import { translations, type Language } from '../i18n';
 
 interface MatchResultsProps {
   matches: MatchResult[];
   hasSearched: boolean;
   isSearching: boolean;
+  language?: Language;
   onSelectProvider: (providerId: string) => void;
 }
 
@@ -14,8 +16,10 @@ export const MatchResults: React.FC<MatchResultsProps> = ({
   matches,
   hasSearched,
   isSearching,
+  language = 'en',
   onSelectProvider
 }) => {
+  const t = translations[language];
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   if (isSearching) {
@@ -24,10 +28,7 @@ export const MatchResults: React.FC<MatchResultsProps> = ({
         <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto animate-bounce">
           <Sparkles className="w-8 h-8" />
         </div>
-        <h3 className="text-xl font-bold text-zinc-900">Calculating Local Match Scores...</h3>
-        <p className="text-sm text-zinc-500 max-w-md mx-auto">
-          Evaluating local distance, skill relevance, experience, availability, and rating.
-        </p>
+        <h3 className="text-xl font-bold text-zinc-900">{t.customer.searchingBtn}</h3>
       </div>
     );
   }
@@ -40,9 +41,9 @@ export const MatchResults: React.FC<MatchResultsProps> = ({
         <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
           <ShieldCheck className="w-8 h-8" />
         </div>
-        <h3 className="text-2xl font-bold text-zinc-900">No direct matches found</h3>
+        <h3 className="text-2xl font-bold text-zinc-900">{t.match.noMatchesTitle}</h3>
         <p className="text-base text-zinc-600 max-w-lg mx-auto">
-          No relevant matches found for your exact query. Try expanding your location or service search.
+          {t.match.noMatchesSub}
         </p>
       </div>
     );
@@ -55,9 +56,8 @@ export const MatchResults: React.FC<MatchResultsProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-4 sm:px-6 rounded-2xl border border-blue-100 shadow-xs">
         <div>
           <h3 className="text-xl font-extrabold text-zinc-900 flex items-center space-x-2">
-            <span>Ranked Provider Matches ({matches.length})</span>
+            <span>{t.match.resultsTitle.replace('{count}', String(matches.length))}</span>
           </h3>
-          <p className="text-xs text-zinc-500 font-medium">Click on any provider card to view full profile or request service</p>
         </div>
 
         {/* View Mode Toggle: List vs Map */}
@@ -71,7 +71,7 @@ export const MatchResults: React.FC<MatchResultsProps> = ({
             }`}
           >
             <ListFilter className="w-4 h-4" />
-            <span>List View</span>
+            <span>List</span>
           </button>
           <button
             onClick={() => setViewMode('map')}
@@ -82,7 +82,7 @@ export const MatchResults: React.FC<MatchResultsProps> = ({
             }`}
           >
             <Map className="w-4 h-4 text-blue-600" />
-            <span>Interactive Map</span>
+            <span>Map</span>
           </button>
         </div>
       </div>
@@ -100,7 +100,6 @@ export const MatchResults: React.FC<MatchResultsProps> = ({
           if (!provider || !user) return null;
 
           const hasReviews = provider.total_reviews && provider.total_reviews > 0;
-          const hasExp = provider.experience_years !== null && provider.experience_years !== undefined && provider.experience_years > 0;
 
           return (
             <div
@@ -122,9 +121,6 @@ export const MatchResults: React.FC<MatchResultsProps> = ({
                       <h4 className="text-2xl font-extrabold text-zinc-900 group-hover:text-blue-700 transition-colors">
                         {user.name}
                       </h4>
-                      <span className="bg-blue-50 text-blue-900 text-xs font-extrabold px-2.5 py-0.5 rounded-full border border-blue-200">
-                        {hasExp ? `${provider.experience_years}+ Years Exp` : 'Experience not specified'}
-                      </span>
                     </div>
 
                     <p className="text-base font-bold text-zinc-700">{provider.title}</p>
@@ -132,26 +128,16 @@ export const MatchResults: React.FC<MatchResultsProps> = ({
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 font-semibold pt-0.5">
                       <span className="flex items-center text-blue-900 font-bold bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
                         <Star className="w-3.5 h-3.5 fill-blue-600 text-blue-600 mr-1" />
-                        {hasReviews ? `${provider.rating} (${provider.total_reviews} reviews)` : 'New provider'}
+                        {hasReviews ? `${provider.rating} (${provider.total_reviews})` : t.customer.newProvider}
                       </span>
 
                       <span className="flex items-center text-slate-800 font-semibold">
                         <MapPin className="w-3.5 h-3.5 text-blue-600 mr-1" />
-                        {user.location} {match.distance_km ? `• ${match.distance_km} km away` : ''}
-                      </span>
-
-                      <span className="flex items-center text-slate-800 font-semibold">
-                        <Clock className="w-3.5 h-3.5 text-blue-600 mr-1" />
-                        {provider.availability || 'Availability not specified'}
+                        {user.location} {match.distance_km !== undefined && match.distance_km !== null ? `(${match.distance_km} km away)` : ''}
                       </span>
 
                       <span className="flex items-center text-emerald-950 font-extrabold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                        💰 {provider.price !== null && provider.price !== undefined ? `₹${provider.price}` : 'Price on Request'} / {
-                          provider.pricing_unit === 'per_person' ? 'Per Person' :
-                          provider.pricing_unit === 'per_hour' ? 'Per Hour' :
-                          provider.pricing_unit === 'per_session' ? 'Per Session' :
-                          provider.pricing_unit === 'negotiable' ? 'Negotiable' : 'Per Service'
-                        }
+                        💰 {provider.price !== null && provider.price !== undefined ? `₹${provider.price}` : 'Price on request'}
                       </span>
                     </div>
                   </div>
@@ -160,7 +146,7 @@ export const MatchResults: React.FC<MatchResultsProps> = ({
                 {/* MATCH SCORE BADGE */}
                 <div className="self-start sm:self-auto bg-blue-700 text-white px-6 py-3.5 rounded-2xl shadow-md text-center flex-shrink-0 border border-blue-500">
                   <span className="block text-2xl font-black tracking-tight">{match.score}%</span>
-                  <span className="block text-[11px] font-extrabold uppercase tracking-wider text-blue-100">MATCH SCORE</span>
+                  <span className="block text-[11px] font-extrabold uppercase tracking-wider text-blue-100">{t.customer.matchScore}</span>
                 </div>
 
               </div>
@@ -169,7 +155,7 @@ export const MatchResults: React.FC<MatchResultsProps> = ({
               <div className="bg-blue-50/60 p-5 rounded-2xl border border-blue-100 space-y-3">
                 <h5 className="text-xs font-extrabold text-blue-900 uppercase tracking-wider flex items-center space-x-1.5">
                   <Sparkles className="w-4 h-4 text-blue-600" />
-                  <span>MATCH HIGHLIGHTS</span>
+                  <span>{t.match.matchedBecause}</span>
                 </h5>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
@@ -181,7 +167,6 @@ export const MatchResults: React.FC<MatchResultsProps> = ({
                   ))}
                 </div>
 
-                {/* Natural Language Explanation */}
                 {match.explanation && (
                   <p className="text-xs text-zinc-700 italic border-t border-blue-200/60 pt-2 font-medium">
                     💬 "{match.explanation}"
@@ -189,49 +174,19 @@ export const MatchResults: React.FC<MatchResultsProps> = ({
                 )}
               </div>
 
-              {/* Bio & Offered Skills */}
-              <div className="space-y-3">
-                <p className="text-sm text-zinc-600 leading-relaxed font-medium line-clamp-2">
-                  {provider.bio}
-                </p>
-
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {provider.skills.map((sk, i) => (
-                    <span key={i} className="bg-blue-50 text-blue-900 text-xs font-bold px-3 py-1 rounded-xl border border-blue-200">
-                      {sk.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-blue-50">
                 <div className="text-xs text-zinc-500 font-semibold flex items-center space-x-1">
                   <ShieldCheck className="w-4 h-4 text-blue-600" />
-                  <span>SilverHands Provider</span>
+                  <span>{t.customer.silverHandsProvider}</span>
                 </div>
 
                 <div className="flex items-center space-x-3 w-full sm:w-auto">
                   <button
-                    onClick={() => {
-                      const stored = localStorage.getItem('silverhands_saved_providers');
-                      const list: string[] = stored ? JSON.parse(stored) : [];
-                      const updated = list.includes(provider.id) ? list.filter(id => id !== provider.id) : [...list, provider.id];
-                      localStorage.setItem('silverhands_saved_providers', JSON.stringify(updated));
-                      // Trigger state refresh if needed
-                      window.dispatchEvent(new Event('storage'));
-                    }}
-                    className="p-3 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-sm transition-colors flex items-center justify-center cursor-pointer min-h-[44px]"
-                    title="Save Provider"
-                  >
-                    <span>❤️</span>
-                  </button>
-
-                  <button
                     onClick={() => onSelectProvider(provider.id)}
                     className="flex-1 sm:flex-initial bg-white hover:bg-blue-50 text-blue-900 font-extrabold px-6 py-3 rounded-xl border border-blue-200 text-sm transition-colors flex items-center justify-center space-x-1.5 cursor-pointer min-h-[44px]"
                   >
-                    <span>View Profile</span>
+                    <span>{t.customer.viewProfileBtn}</span>
                   </button>
 
                   <button
@@ -239,7 +194,7 @@ export const MatchResults: React.FC<MatchResultsProps> = ({
                     className="flex-1 sm:flex-initial bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-6 py-3 rounded-xl shadow-md text-sm transition-all transform active:scale-95 flex items-center justify-center space-x-2 cursor-pointer min-h-[44px]"
                   >
                     <HeartHandshake className="w-4 h-4" />
-                    <span>Request Service</span>
+                    <span>{t.customer.requestServiceBtn}</span>
                   </button>
                 </div>
               </div>

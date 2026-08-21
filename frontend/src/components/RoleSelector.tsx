@@ -2,11 +2,18 @@ import React from 'react';
 import { UserCheck, Search, ArrowRight, HeartHandshake } from 'lucide-react';
 import type { UserRole } from '../types';
 
+import { translations, type Language } from '../i18n';
+
 interface RoleSelectorProps {
+  language?: Language;
   onSelectRole: (role: UserRole) => void;
 }
 
-export const RoleSelector: React.FC<RoleSelectorProps> = ({ onSelectRole }) => {
+export const RoleSelector: React.FC<RoleSelectorProps> = ({
+  language = 'en',
+  onSelectRole
+}) => {
+  const t = translations[language].role;
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6">
       <div className="max-w-2xl w-full bg-white rounded-3xl p-6 sm:p-10 shadow-2xl border border-blue-100 space-y-8">
@@ -17,10 +24,10 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ onSelectRole }) => {
             <HeartHandshake className="w-9 h-9" />
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-blue-950 tracking-tight">
-            Welcome to SilverHands
+            {t.title}
           </h2>
           <p className="text-lg text-blue-800 font-bold">
-            How would you like to use SilverHands today?
+            {t.subtitle}
           </p>
         </div>
 
@@ -38,16 +45,16 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ onSelectRole }) => {
               </div>
               <div>
                 <h3 className="text-2xl font-extrabold text-zinc-900 group-hover:text-white transition-colors">
-                  👵 I am a Senior Citizen
+                  {t.seniorTitle}
                 </h3>
                 <p className="text-sm font-semibold text-zinc-600 group-hover:text-blue-100 transition-colors mt-2 leading-relaxed">
-                  I want to share my skills, offer services, earn livelihood, and receive customer requests.
+                  {t.seniorDesc}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center space-x-2 text-blue-700 group-hover:text-white font-extrabold text-base transition-colors">
-              <span>Share Skills & Offer Services</span>
+              <span>{t.continueBtn}</span>
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </div>
           </button>
@@ -63,16 +70,16 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ onSelectRole }) => {
               </div>
               <div>
                 <h3 className="text-2xl font-extrabold text-zinc-900 group-hover:text-white transition-colors">
-                  👤 I am a Customer
+                  {t.customerTitle}
                 </h3>
                 <p className="text-sm font-semibold text-zinc-600 group-hover:text-blue-100 transition-colors mt-2 leading-relaxed">
-                  I want to search for authentic services, find skilled senior citizens, and request help.
+                  {t.customerDesc}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center space-x-2 text-blue-700 group-hover:text-white font-extrabold text-base transition-colors">
-              <span>Find & Request Services</span>
+              <span>{t.continueBtn}</span>
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </div>
           </button>

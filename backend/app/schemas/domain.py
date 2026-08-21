@@ -22,6 +22,7 @@ class ServiceBase(BaseModel):
     description: Optional[str] = None
     category: Optional[str] = "General"
     price_range: Optional[str] = "Negotiable"
+    delivery_mode: Optional[str] = "BOTH"
 
 class ServiceCreate(ServiceBase):
     pass
@@ -56,6 +57,7 @@ class ProviderProfileBase(BaseModel):
     languages: Optional[str] = "Tamil, English"
     target_age_group: Optional[str] = None
     availability: str = "Available"
+    service_delivery_mode: Optional[str] = "BOTH"
     rating: Optional[float] = None
     total_reviews: int = 0
     price: Optional[float] = None
@@ -77,6 +79,7 @@ class PublicProviderResponse(BaseModel):
     languages: Optional[str] = "Tamil, English"
     target_age_group: Optional[str] = None
     availability: str = "Available"
+    service_delivery_mode: Optional[str] = "BOTH"
     status: Optional[str] = "PUBLISHED"
     readiness_score: Optional[int] = 85
     rating: Optional[float] = None
@@ -107,6 +110,7 @@ class ProviderProfileUpdate(BaseModel):
     languages: Optional[str] = None
     target_age_group: Optional[str] = None
     availability: Optional[str] = None
+    service_delivery_mode: Optional[str] = None
     location: Optional[str] = None
     skills: Optional[List[str]] = None
     services: Optional[List[str]] = None
@@ -147,6 +151,7 @@ class ProviderRegisterRequest(BaseModel):
     languages: Optional[str] = "Tamil, English"
     target_age_group: Optional[str] = None
     availability: str = "Available"
+    service_delivery_mode: Optional[str] = "BOTH"
     price: Optional[float] = None
     pricing_unit: Optional[str] = "per_service"
     payment_method: Optional[str] = "upi"
@@ -161,6 +166,7 @@ class ServiceRequestBase(BaseModel):
     description: str
     category: Optional[str] = "General"
     location: Optional[str] = "Chennai, Tamil Nadu"
+    delivery_mode: Optional[str] = "BOTH"
     latitude: Optional[float] = 13.0827
     longitude: Optional[float] = 80.2707
     preferred_date: Optional[str] = None
@@ -257,10 +263,87 @@ class OpportunitySuggestionItem(BaseModel):
     suggested_service_name: str
     suggested_description: Optional[str] = None
     badge_label: str  # "REAL MARKET DEMAND" or "POTENTIAL OPPORTUNITY"
+    estimated_earning: Optional[float] = 2500.0
+    match_score: Optional[int] = 85
 
 class SeniorOpportunitiesResponse(BaseModel):
     has_low_request_activity: bool = True
     recent_request_count: int = 0
     status_message: Optional[str] = None
     suggestions: List[OpportunitySuggestionItem] = []
+
+# AI Interview Room Schemas
+class AIInterviewStartRequest(BaseModel):
+    selected_domain: str
+    selected_skill: str
+    session_type: Optional[str] = "REGISTRATION"  # 'REGISTRATION' or 'UPDATE'
+    language: Optional[str] = "en"                # 'en', 'ta', 'hi'
+
+class AIInterviewAnswerRequest(BaseModel):
+    answer: str
+    input_type: Optional[str] = "TEXT"  # 'TEXT' or 'VOICE'
+
+class LocationUpdatePayload(BaseModel):
+    latitude: float
+    longitude: float
+    city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
+    readable_address: Optional[str] = None
+
+class ApprovedServiceItem(BaseModel):
+    name: str
+    category: Optional[str] = "General"
+    description: Optional[str] = None
+    price_range: Optional[str] = "Negotiable"
+    delivery_mode: Optional[str] = "BOTH"
+
+class AIInterviewApproveRequest(BaseModel):
+    approved_skills: List[str] = []
+    approved_services: List[ApprovedServiceItem] = []
+    experience_years: Optional[int] = None
+    bio_summary: Optional[str] = None
+
+class AIInterviewMessageResponse(BaseModel):
+    id: str
+    session_id: str
+    role: str
+    message: str
+    input_type: str
+    question_number: int
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class AIInterviewResultResponse(BaseModel):
+    id: str
+    session_id: str
+    detected_skills: str  # JSON or text
+    experience_summary: str
+    capabilities: str     # JSON or text
+    confidence_score: int
+    suggested_services: str # JSON or text
+    evidence: Optional[str] = None
+    recommendation_reason: Optional[str] = None
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class AIInterviewSessionResponse(BaseModel):
+    id: str
+    senior_id: str
+    session_type: Optional[str] = "REGISTRATION"
+    language: Optional[str] = "en"
+    selected_domain: str
+    selected_skill: str
+    existing_profile_snapshot: Optional[str] = None
+    status: str
+    started_at: datetime
+    completed_at: Optional[datetime] = None
+    overall_score: Optional[int] = None
+    summary: Optional[str] = None
+    messages: List[AIInterviewMessageResponse] = []
+    result: Optional[AIInterviewResultResponse] = None
+    next_question: Optional[str] = None
+    is_completed_ready: bool = False
+    model_config = ConfigDict(from_attributes=True)
+
 

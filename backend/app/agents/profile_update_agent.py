@@ -35,20 +35,24 @@ def parse_profile_update_fallback(text: str) -> Dict[str, Any]:
             "draft_update": {"experience_years": yrs}
         }
     
-    # Add service
-    if any(k in text_lower for k in ["add", "offer", "started", "now teach", "now make", "also provide"]):
-        service_name = text.strip()
-        if "teach" in text_lower or "tutoring" in text_lower or "hindi" in text_lower:
-            service_name = "Hindi Tutoring for Children"
-        elif "cook" in text_lower or "food" in text_lower:
-            service_name = "Home Cooking & Snacks"
+    # Add skill or service
+    if any(k in text_lower for k in ["skill", "add", "offer", "started", "now teach", "now make", "also do", "also provide"]):
+        clean_text = text.strip()
+        # Clean common speech prefix/suffix phrases
+        for prefix in ["i also do ", "i do ", "add ", "also ", "my skill is "]:
+            clean_text = re.sub(r'(?i)' + re.escape(prefix), '', clean_text)
+        for suffix in [" to my skills", " to my profile", " skill"]:
+            clean_text = re.sub(r'(?i)' + re.escape(suffix), '', clean_text)
+        clean_text = clean_text.strip().title()
+        if not clean_text:
+            clean_text = "Custom Skill"
             
         return {
-            "intent": "ADD_SERVICE",
-            "summary": f"Add '{service_name}' to your service offerings.",
-            "target_field": "services",
-            "value": service_name,
-            "draft_update": {"services": [service_name]}
+            "intent": "ADD_SKILL",
+            "summary": f"Add '{clean_text}' to your skill profile.",
+            "target_field": "skills",
+            "value": clean_text,
+            "draft_update": {"skills": [clean_text]}
         }
         
     # Default update draft

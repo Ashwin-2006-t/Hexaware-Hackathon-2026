@@ -3,17 +3,23 @@ import { Send, Calculator, AlertCircle, X } from 'lucide-react';
 import type { ServiceRequest } from '../types';
 import { sendSeniorQuoteApi } from '../services/api';
 
+import { translations, type Language } from '../i18n';
+
 interface SeniorQuoteModalProps {
   request: ServiceRequest;
+  language?: Language;
   onClose: () => void;
   onQuoteSent: () => void;
 }
 
 export const SeniorQuoteModal: React.FC<SeniorQuoteModalProps> = ({
   request,
+  language = 'en',
   onClose,
   onQuoteSent
 }) => {
+  const t = translations[language].quote;
+  const tc = translations[language].common;
   const baseRate = request.agreed_price ?? request.provider?.price ?? 0;
   const unit = request.agreed_pricing_unit || 'per_service';
   const qty = Math.max(1, request.requirement_quantity || 1);
@@ -70,8 +76,8 @@ export const SeniorQuoteModal: React.FC<SeniorQuoteModalProps> = ({
               <Calculator className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-lg font-black text-zinc-900">Review Requirement & Send Quote</h3>
-              <p className="text-xs text-zinc-500 font-medium">Create custom locked quote for customer approval</p>
+              <h3 className="text-lg font-black text-zinc-900">{t.title}</h3>
+              <p className="text-xs text-zinc-500 font-medium">{t.subtitle}</p>
             </div>
           </div>
 
@@ -96,7 +102,7 @@ export const SeniorQuoteModal: React.FC<SeniorQuoteModalProps> = ({
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-zinc-600">Your Configured Base Rate:</span>
+            <span className="text-zinc-600">Base Rate:</span>
             <span className="font-bold text-zinc-900">
               ₹{baseRate} / {unitLabel}
             </span>
@@ -111,21 +117,10 @@ export const SeniorQuoteModal: React.FC<SeniorQuoteModalProps> = ({
         {/* Quote Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          {/* Base Calculation Banner */}
-          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-1">
-            <div className="flex justify-between items-center text-xs font-bold text-emerald-900">
-              <span>Base Rate Calculation ({unitLabel}):</span>
-              <span>₹{baseRate} × {qty} = ₹{calculatedBaseTotal}</span>
-            </div>
-            <p className="text-[11px] text-emerald-800 font-medium">
-              You can add optional extra charges (e.g. ingredients, travel, special materials) or adjust final amount below.
-            </p>
-          </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-zinc-700 mb-1">
-                Additional Charge (₹)
+                {t.additionalChargeLabel}
               </label>
               <input
                 type="number"
@@ -140,7 +135,7 @@ export const SeniorQuoteModal: React.FC<SeniorQuoteModalProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-zinc-700 mb-1">
-                Final Quoted Amount (₹) *
+                {t.quoteAmountLabel}
               </label>
               <input
                 type="number"
@@ -155,13 +150,13 @@ export const SeniorQuoteModal: React.FC<SeniorQuoteModalProps> = ({
 
           <div>
             <label className="block text-xs font-bold text-zinc-700 mb-1">
-              Senior Quote Note / Explanation (Optional)
+              {t.noteLabel}
             </label>
             <textarea
               rows={2}
               value={quoteNote}
               onChange={(e) => setQuoteNote(e.target.value)}
-              placeholder="e.g. Includes extra ingredients and custom packaging for 5 guests."
+              placeholder="e.g. Includes extra ingredients and custom packaging"
               className="w-full p-3 rounded-xl border border-zinc-300 text-xs font-medium bg-white"
             />
           </div>
@@ -180,7 +175,7 @@ export const SeniorQuoteModal: React.FC<SeniorQuoteModalProps> = ({
               onClick={onClose}
               className="flex-1 py-3.5 rounded-xl border border-zinc-300 text-zinc-700 font-extrabold text-xs hover:bg-zinc-50 cursor-pointer min-h-[44px]"
             >
-              Cancel
+              {tc.cancel}
             </button>
             
             <button
@@ -189,7 +184,7 @@ export const SeniorQuoteModal: React.FC<SeniorQuoteModalProps> = ({
               className="flex-1 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md flex items-center justify-center space-x-2 cursor-pointer min-h-[44px]"
             >
               <Send className="w-4 h-4" />
-              <span>{isSubmitting ? 'Sending Quote...' : `Send Quote (₹${finalQuoteAmount})`}</span>
+              <span>{isSubmitting ? tc.processing : `${t.sendBtn} (₹${finalQuoteAmount})`}</span>
             </button>
           </div>
 

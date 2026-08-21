@@ -216,3 +216,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local databases
+silverhands.db
+backend/silverhands.db
+
+# Local databases
+silverhands.db
+backend/silverhands.db

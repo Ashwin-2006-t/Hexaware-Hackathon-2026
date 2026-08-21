@@ -1,25 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { Edit3, Plus, Trash2, CheckCircle2, AlertTriangle, Send, RefreshCw, X, ShieldAlert, Phone, MapPin, Globe, UserCheck, ShieldCheck } from 'lucide-react';
-import { updateProvider, deleteProvider, nlpUpdateProvider } from '../services/api';
+import { Edit3, Plus, Trash2, CheckCircle2, AlertTriangle, Send, RefreshCw, X, ShieldAlert, Phone, MapPin, Globe, UserCheck, ShieldCheck, Sparkles, Mic } from 'lucide-react';
+import { updateProvider, deleteProvider, nlpUpdateProvider, addProviderSkillApi, analyzeSkills, updateMyLocationApi } from '../services/api';
 import type { ProviderProfile, NLPUpdateProposal } from '../types';
 import { VoiceInputButton } from './VoiceInputButton';
+import { LocationPicker, type LocationData } from './LocationPicker';
+
+import type { Language } from '../i18n';
 
 interface ProfileUpdateSectionProps {
   currentProfile: ProviderProfile;
   pendingSuggestedService?: string | null;
+  language?: Language;
   onClearPendingSuggestedService?: () => void;
   onProfileUpdated: (updated: ProviderProfile) => void;
   onProfileDeleted: () => void;
+  onTriggerAiInterview?: (mode: 'UPDATE') => void;
 }
+
+import { useLanguage } from '../context/LanguageContext';
 
 export const ProfileUpdateSection: React.FC<ProfileUpdateSectionProps> = ({
   currentProfile,
   pendingSuggestedService,
   onClearPendingSuggestedService,
   onProfileUpdated,
-  onProfileDeleted
+  onProfileDeleted,
+  onTriggerAiInterview
 }) => {
-  const [activeTab, setActiveTab] = useState<'form' | 'nlp'>('form');
+  const { t } = useLanguage();
+  const [activeTab, setActiveTab] = useState<'form' | 'nlp' | 'voice_skill'>('form');
   const [prefilledRecommendation, setPrefilledRecommendation] = useState<string | null>(null);
 
   const getInitialSkills = (prof: ProviderProfile): string[] => {
@@ -45,6 +54,7 @@ export const ProfileUpdateSection: React.FC<ProfileUpdateSectionProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<string>(currentProfile.payment_method || 'upi');
   const [paymentUpiId, setPaymentUpiId] = useState<string>(currentProfile.payment_upi_id || '');
   const [paymentInstructions, setPaymentInstructions] = useState<string>(currentProfile.payment_instructions || '');
+  const [serviceDeliveryMode, setServiceDeliveryMode] = useState<string>(currentProfile.service_delivery_mode || 'BOTH');
   const [skills, setSkills] = useState<string[]>(() => getInitialSkills(currentProfile));
   const [services, setServices] = useState<string[]>(() => getInitialServices(currentProfile));
 
@@ -53,6 +63,91 @@ export const ProfileUpdateSection: React.FC<ProfileUpdateSectionProps> = ({
 
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMsg, setUpdateMsg] = useState<string | null>(null);
+  const [pendingLocationUpdate, setPendingLocationUpdate] = useState<LocationData | null>(null);
+
+  const handleConfirmLocationUpdate = async () => {
+    if (!pendingLocationUpdate) return;
+    setIsUpdating(true);
+    try {
+      const res = await updateMyLocationApi({
+        latitude: pendingLocationUpdate.latitude,
+        longitude: pendingLocationUpdate.longitude,
+        city: pendingLocationUpdate.city,
+        state: pendingLocationUpdate.state,
+        country: pendingLocationUpdate.country,
+        readable_address: pendingLocationUpdate.readable_address
+      });
+      setLocation(res.location);
+      setUpdateMsg(`Location updated to ${res.location}`);
+      setPendingLocationUpdate(null);
+      onProfileUpdated({ ...currentProfile, location: res.location, latitude: res.latitude, longitude: res.longitude });
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to update location.');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Tab C Voice Skill state
+  const [voiceSkillInput, setVoiceSkillInput] = useState('');
+  const [isAnalyzingVoiceSkill, setIsAnalyzingVoiceSkill] = useState(false);
+  const [detectedSkill, setDetectedSkill] = useState<string | null>(null);
+  const [isAddingVoiceSkill, setIsAddingVoiceSkill] = useState(false);
+  const [voiceSkillMsg, setVoiceSkillMsg] = useState<string | null>(null);
+
+  const handleAnalyzeVoiceSkill = async () => {
+    if (!voiceSkillInput.trim()) return;
+    setIsAnalyzingVoiceSkill(true);
+    setDetectedSkill(null);
+    setVoiceSkillMsg(null);
+    try {
+      const res = await analyzeSkills(voiceSkillInput);
+      if (res && res.skills && res.skills.length > 0) {
+        setDetectedSkill(res.skills[0]);
+      } else {
+        let clean = voiceSkillInput.trim();
+        for (const p of ["i also do ", "i do ", "add ", "also ", "my skill is "]) {
+          clean = clean.replace(new RegExp(p, 'gi'), '');
+        }
+        for (const s of [" to my skills", " to my profile", " skill"]) {
+          clean = clean.replace(new RegExp(s, 'gi'), '');
+        }
+        setDetectedSkill(clean.trim().replace(/\b\w/g, c => c.toUpperCase()) || "Custom Skill");
+      }
+    } catch (err) {
+      console.error(err);
+      let clean = voiceSkillInput.trim();
+      for (const p of ["i also do ", "i do ", "add ", "also ", "my skill is "]) {
+        clean = clean.replace(new RegExp(p, 'gi'), '');
+      }
+      for (const s of [" to my skills", " to my profile", " skill"]) {
+        clean = clean.replace(new RegExp(s, 'gi'), '');
+      }
+      setDetectedSkill(clean.trim().replace(/\b\w/g, c => c.toUpperCase()) || "Custom Skill");
+    } finally {
+      setIsAnalyzingVoiceSkill(false);
+    }
+  };
+
+  const handleConfirmAddVoiceSkill = async () => {
+    if (!detectedSkill) return;
+    setIsAddingVoiceSkill(true);
+    try {
+      const updated = await addProviderSkillApi(detectedSkill);
+      const newSkills = getInitialSkills(updated);
+      setSkills(newSkills);
+      setVoiceSkillMsg(`Skill '${detectedSkill}' added to your profile!`);
+      onProfileUpdated(updated);
+      setDetectedSkill(null);
+      setVoiceSkillInput('');
+    } catch (err: any) {
+      console.error(err);
+      alert('Could not add skill to profile.');
+    } finally {
+      setIsAddingVoiceSkill(false);
+    }
+  };
 
   // Sync state whenever currentProfile prop updates
   useEffect(() => {
@@ -69,6 +164,7 @@ export const ProfileUpdateSection: React.FC<ProfileUpdateSectionProps> = ({
       setPaymentMethod(currentProfile.payment_method || 'upi');
       setPaymentUpiId(currentProfile.payment_upi_id || '');
       setPaymentInstructions(currentProfile.payment_instructions || '');
+      setServiceDeliveryMode(currentProfile.service_delivery_mode || 'BOTH');
       setSkills(getInitialSkills(currentProfile));
       setServices(getInitialServices(currentProfile));
     }
@@ -134,6 +230,7 @@ export const ProfileUpdateSection: React.FC<ProfileUpdateSectionProps> = ({
         location,
         languages,
         availability,
+        service_delivery_mode: serviceDeliveryMode,
         price: price === '' ? undefined : Number(price),
         pricing_unit: pricingUnit,
         payment_method: paymentMethod,
@@ -247,12 +344,24 @@ export const ProfileUpdateSection: React.FC<ProfileUpdateSectionProps> = ({
           <p className="text-sm text-zinc-600">Update personal information, stated skills, services, rates, and availability</p>
         </div>
 
+        {/* Update Profile with AI Action */}
+        {onTriggerAiInterview && (
+          <button
+            type="button"
+            onClick={() => onTriggerAiInterview('UPDATE')}
+            className="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md flex items-center space-x-2 transition cursor-pointer self-start sm:self-auto"
+          >
+            <Sparkles className="w-4 h-4 text-amber-300" />
+            <span>Update My Profile with AI Voice Interview</span>
+          </button>
+        )}
+
         {/* Tab Switcher */}
-        <div className="flex bg-blue-50 p-1 rounded-2xl border border-blue-200 self-start sm:self-auto">
+        <div className="flex bg-blue-50 p-1 rounded-2xl border border-blue-200 self-start sm:self-auto gap-1">
           <button
             type="button"
             onClick={() => setActiveTab('form')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
               activeTab === 'form' ? 'bg-blue-600 text-white shadow-sm' : 'text-blue-900 hover:bg-blue-100'
             }`}
           >
@@ -261,11 +370,21 @@ export const ProfileUpdateSection: React.FC<ProfileUpdateSectionProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('nlp')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
               activeTab === 'nlp' ? 'bg-blue-600 text-white shadow-sm' : 'text-blue-900 hover:bg-blue-100'
             }`}
           >
             B. Voice / Speech Update
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('voice_skill')}
+            className={`px-3 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center space-x-1 ${
+              activeTab === 'voice_skill' ? 'bg-emerald-600 text-white shadow-sm' : 'text-emerald-900 hover:bg-emerald-100'
+            }`}
+          >
+            <Mic className="w-3.5 h-3.5" />
+            <span>C. Add Skill Using Voice</span>
           </button>
         </div>
       </div>
@@ -344,6 +463,48 @@ export const ProfileUpdateSection: React.FC<ProfileUpdateSectionProps> = ({
               </div>
             </div>
 
+            <div className="space-y-4">
+              <label className="block text-xs font-extrabold text-zinc-700 uppercase tracking-wider mb-1">Current Service Location</label>
+              
+              <LocationPicker
+                initialLocation={location}
+                initialLat={currentProfile.latitude || currentProfile.user?.latitude}
+                initialLon={currentProfile.longitude || currentProfile.user?.longitude}
+                onLocationDetected={(locData) => {
+                  setPendingLocationUpdate(locData);
+                }}
+              />
+
+              {/* Confirmation Modal */}
+              {pendingLocationUpdate && (
+                <div className="p-4 rounded-2xl bg-indigo-50 border-2 border-indigo-200 text-indigo-950 space-y-3 animate-in fade-in">
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="w-5 h-5 text-indigo-600 flex-shrink-0" />
+                    <span className="text-xs font-black">
+                      Update your service location to: <strong>📍 {pendingLocationUpdate.readable_address}</strong>?
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setPendingLocationUpdate(null)}
+                      className="px-4 py-2 rounded-xl bg-white border border-indigo-200 text-indigo-900 font-extrabold text-xs hover:bg-indigo-100 transition cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmLocationUpdate}
+                      disabled={isUpdating}
+                      className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md transition cursor-pointer"
+                    >
+                      {isUpdating ? 'Updating...' : 'Confirm Location'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-extrabold text-zinc-700 uppercase tracking-wider mb-1">Location / Address</label>
@@ -420,6 +581,36 @@ export const ProfileUpdateSection: React.FC<ProfileUpdateSectionProps> = ({
                   placeholder="e.g. 20 (leave blank if unstated)"
                   className="w-full p-3.5 rounded-2xl border-2 border-emerald-100 focus:border-emerald-600 text-base font-semibold text-zinc-900 bg-white"
                 />
+              </div>
+            </div>
+
+            {/* SERVICE DELIVERY PREFERENCE */}
+            <div className="space-y-3 p-4 rounded-2xl bg-white border border-emerald-200">
+              <label className="block text-xs font-black uppercase text-emerald-950 tracking-wider">
+                {t('profileUpdate.serviceDeliveryHeader')}
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  { id: 'IN_PERSON', label: `📍 ${t('profileUpdate.modeInPerson')}`, desc: 'On-site visits' },
+                  { id: 'ONLINE', label: `💻 ${t('profileUpdate.modeOnline')}`, desc: 'Virtual Live Room' },
+                  { id: 'BOTH', label: `🌐 ${t('profileUpdate.modeBoth')}`, desc: 'In-Person & Virtual' }
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setServiceDeliveryMode(item.id)}
+                    className={`p-3.5 rounded-2xl border-2 text-left transition cursor-pointer flex flex-col justify-between ${
+                      serviceDeliveryMode === item.id
+                        ? 'bg-emerald-700 border-emerald-800 text-white shadow-md ring-2 ring-emerald-300'
+                        : 'bg-slate-50 border-slate-200 text-slate-800 hover:border-emerald-300'
+                    }`}
+                  >
+                    <span className="text-xs font-black">{item.label}</span>
+                    <span className={`text-[10px] font-bold mt-1 ${serviceDeliveryMode === item.id ? 'text-emerald-100' : 'text-slate-500'}`}>
+                      {item.desc}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -720,6 +911,96 @@ export const ProfileUpdateSection: React.FC<ProfileUpdateSectionProps> = ({
                   className="px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs shadow-md"
                 >
                   Confirm & Apply Update
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab C: Add New Skill Using Voice */}
+      {activeTab === 'voice_skill' && (
+        <div className="space-y-6 animate-in fade-in">
+          <div className="p-6 rounded-3xl bg-emerald-50/60 border-2 border-emerald-200 space-y-5">
+            <div className="flex items-center space-x-3 border-b border-emerald-200 pb-3">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-black">
+                <Mic className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h4 className="text-lg font-black text-emerald-950">C. Add New Skill Using Voice</h4>
+                <p className="text-xs text-emerald-800 font-semibold">
+                  Speak or type additional skills to add to your existing SilverHands senior profile.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-extrabold text-emerald-950 uppercase tracking-wider mb-2">
+                  Speak Your New Skill Below:
+                </label>
+                <textarea
+                  rows={3}
+                  value={voiceSkillInput}
+                  onChange={(e) => setVoiceSkillInput(e.target.value)}
+                  placeholder='e.g. "I also do stone work embroidery" or "Traditional South Indian breakfast catering"'
+                  className="w-full p-4 rounded-2xl border-2 border-emerald-200 focus:border-emerald-600 text-sm font-semibold text-zinc-900 bg-white"
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center space-x-2 w-full sm:w-auto">
+                  <VoiceInputButton onTranscript={(text: string) => setVoiceSkillInput(text)} />
+                  <span className="text-xs font-bold text-emerald-800 hidden sm:inline">Click mic to record skill</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAnalyzeVoiceSkill}
+                  disabled={isAnalyzingVoiceSkill || !voiceSkillInput.trim()}
+                  className="w-full sm:w-auto bg-emerald-700 hover:bg-emerald-800 disabled:bg-emerald-300 text-white font-black px-6 py-3.5 rounded-2xl text-xs flex items-center justify-center space-x-2 cursor-pointer shadow-md min-h-[48px]"
+                >
+                  {isAnalyzingVoiceSkill ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  <span>Analyze Spoken Skill</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {voiceSkillMsg && (
+            <div className="p-4 rounded-2xl bg-emerald-100 border border-emerald-300 text-emerald-950 font-bold text-sm flex items-center space-x-2 shadow-xs">
+              <CheckCircle2 className="w-5 h-5 text-emerald-700 flex-shrink-0" />
+              <span>{voiceSkillMsg}</span>
+            </div>
+          )}
+
+          {detectedSkill && (
+            <div className="p-6 rounded-3xl bg-emerald-50 border-2 border-emerald-300 space-y-4 shadow-md animate-in fade-in">
+              <div className="flex items-center space-x-2">
+                <Sparkles className="w-6 h-6 text-emerald-600 flex-shrink-0" />
+                <h5 className="text-lg font-black text-emerald-950">Detected Skill: "{detectedSkill}"</h5>
+              </div>
+
+              <p className="text-xs font-semibold text-emerald-900 bg-white p-3.5 rounded-xl border border-emerald-200">
+                Would you like to add <strong>"{detectedSkill}"</strong> to your existing SilverHands provider profile? This will not alter your existing pricing, experience, or service offerings.
+              </p>
+
+              <div className="flex items-center justify-end space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDetectedSkill(null)}
+                  className="px-4 py-2.5 rounded-xl border border-emerald-300 text-emerald-900 font-bold text-xs hover:bg-emerald-100 min-h-[44px] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmAddVoiceSkill}
+                  disabled={isAddingVoiceSkill}
+                  className="px-6 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs shadow-md min-h-[44px] flex items-center space-x-2 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>{isAddingVoiceSkill ? 'Adding Skill...' : 'Add To My Profile'}</span>
                 </button>
               </div>
             </div>

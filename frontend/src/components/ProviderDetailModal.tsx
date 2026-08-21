@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Star, MapPin, Clock, CheckCircle2, HeartHandshake, Send, AlertCircle, UserCheck, Edit3, Heart, ArrowRight, Calendar } from 'lucide-react';
-import type { ProviderProfile } from '../types';
-import { fetchProviderById, createServiceRequest, saveProviderApi } from '../services/api';
+import type { ProviderProfile, ReviewRecord } from '../types';
+import { fetchProviderById, createServiceRequest, saveProviderApi, fetchProviderReviews } from '../services/api';
 import { translations, type Language } from '../i18n';
 
 interface ProviderDetailModalProps {
@@ -65,6 +65,8 @@ export const ProviderDetailModal: React.FC<ProviderDetailModalProps> = ({
   const isMyProfile = Boolean(myProviderId && provider && myProviderId === provider.id);
   const isOwnerMode = viewContext === 'owner' && isMyProfile;
 
+  const [reviewsList, setReviewsList] = useState<ReviewRecord[]>([]);
+
   useEffect(() => {
     if (!providerId) return;
     setLoading(true);
@@ -75,6 +77,10 @@ export const ProviderDetailModal: React.FC<ProviderDetailModalProps> = ({
       })
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
+
+    fetchProviderReviews(providerId)
+      .then((revs) => setReviewsList(revs))
+      .catch((err) => console.error(err));
   }, [providerId]);
 
   useEffect(() => {
@@ -289,6 +295,39 @@ export const ProviderDetailModal: React.FC<ProviderDetailModalProps> = ({
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* Verified Customer Reviews Section */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Verified Customer Reviews</h4>
+                  <span className="text-xs font-bold text-blue-900">
+                    {reviewsList.length} {reviewsList.length === 1 ? 'Review' : 'Reviews'}
+                  </span>
+                </div>
+
+                {reviewsList.length === 0 ? (
+                  <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs text-zinc-500 font-medium">
+                    No customer reviews submitted yet. Be the first neighbor to leave a review!
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {reviewsList.map((rev) => (
+                      <div key={rev.id} className="p-4 rounded-2xl border border-blue-100 bg-white shadow-2xs space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-extrabold text-zinc-900">{rev.customer_name || 'Verified Customer'}</span>
+                          <div className="flex items-center space-x-1 text-xs font-bold text-amber-600">
+                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                            <span>{rev.rating}.0</span>
+                          </div>
+                        </div>
+                        {rev.comment && (
+                          <p className="text-xs text-zinc-700 font-medium italic">"{rev.comment}"</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* VIEWING CONTEXT PROTECTION */}

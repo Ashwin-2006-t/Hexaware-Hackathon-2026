@@ -6,7 +6,7 @@ from app.database import get_db
 from app.models.domain import User, ProviderProfile, Skill, Service, ServiceRequest, Review
 from app.schemas.domain import (
     ProviderRegisterRequest, ProviderDetailResponse, PublicProviderResponse,
-    ProviderProfileUpdate, NLPUpdateProposal
+    ProviderProfileUpdate, NLPUpdateProposal, LocationUpdatePayload
 )
 from app.agents.profile_update_agent import parse_profile_update
 from app.auth import get_current_user
@@ -107,6 +107,7 @@ def create_provider(
             languages=payload.languages or "Tamil, English",
             target_age_group=payload.target_age_group,
             availability=payload.availability or "Available",
+            service_delivery_mode=payload.service_delivery_mode or "BOTH",
             status="PUBLISHED",
             readiness_score=85,
             rating=0.0,
@@ -119,6 +120,22 @@ def create_provider(
         )
         db.add(profile)
         db.flush()
+    else:
+        # Profile already exists — update specified fields while preserving existing values
+        if payload.title:
+            profile.title = payload.title
+        if payload.bio:
+            profile.bio = payload.bio
+        if payload.experience_years is not None and payload.experience_years > 0:
+            profile.experience_years = payload.experience_years
+        if payload.languages:
+            profile.languages = payload.languages
+        if payload.availability:
+            profile.availability = payload.availability
+        if payload.price is not None and payload.price > 0:
+            profile.price = payload.price
+        if payload.pricing_unit:
+            profile.pricing_unit = payload.pricing_unit
 
     for skill_name in payload.skills:
         if not any(existing.name.lower() == skill_name.lower() for existing in profile.skills):
@@ -145,12 +162,17 @@ def create_provider(
     db.refresh(profile)
     return profile
 
+from app.services.matching_service import haversine_distance
+
 @router.get("", response_model=List[PublicProviderResponse])
 def list_providers(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     category: Optional[str] = None,
     search: Optional[str] = None,
+    customer_lat: Optional[float] = None,
+    customer_lon: Optional[float] = None,
+    radius_km: Optional[str] = "All",
     db: Session = Depends(get_db)
 ):
     # Filter ONLY Published profiles for customer marketplace search! Draft profiles are excluded.
@@ -169,8 +191,28 @@ def list_providers(
             (ProviderProfile.bio.ilike(search_term))
         )
 
-    profiles = query.distinct().offset(skip).limit(limit).all()
-    return profiles
+    profiles = query.distinct().all()
+
+    # Apply real Haversine geodesic distance radius filtering
+    if customer_lat is not None and customer_lon is not None and radius_km and radius_km.strip().lower() != "all":
+        try:
+            r_max = float(radius_km)
+            filtered = []
+            for p in profiles:
+                p_lat = p.latitude if p.latitude is not None else (p.user.latitude if p.user else None)
+                p_lon = p.longitude if p.longitude is not None else (p.user.longitude if p.user else None)
+                if p_lat is not None and p_lon is not None:
+                    dist = haversine_distance(customer_lat, customer_lon, p_lat, p_lon)
+                    if dist <= r_max:
+                        filtered.append(p)
+                else:
+                    # If provider coordinates missing, keep in results
+                    filtered.append(p)
+            profiles = filtered
+        except ValueError:
+            pass
+
+    return profiles[skip : skip + limit]
 
 @router.get("/{provider_id}", response_model=PublicProviderResponse)
 def get_provider(provider_id: str, db: Session = Depends(get_db)):
@@ -238,6 +280,8 @@ def update_provider(
         profile.target_age_group = payload.target_age_group
     if payload.availability is not None:
         profile.availability = payload.availability
+    if payload.service_delivery_mode is not None:
+        profile.service_delivery_mode = str(payload.service_delivery_mode)
     if payload.price is not None:
         profile.price = float(payload.price)
     if payload.pricing_unit is not None:
@@ -510,10 +554,68 @@ def remove_my_skill(
     if not profile:
         raise HTTPException(status_code=404, detail="Provider profile not found")
 
-    clean_name = skill_name.strip().lower()
-    for existing in list(profile.skills):
-        if existing.name.lower() == clean_name or clean_name in existing.name.lower():
-            db.delete(existing)
     db.commit()
     db.refresh(profile)
     return profile
+
+@router.patch("/me/location")
+def update_my_location(
+    payload: LocationUpdatePayload,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Authenticated location update endpoint.
+    Validates latitude (-90 to 90) and longitude (-180 to 180).
+    Updates user & provider profile coordinates, city, state, country, and readable location string.
+    """
+    if payload.latitude < -90.0 or payload.latitude > 90.0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Latitude must be between -90 and 90 degrees."
+        )
+    if payload.longitude < -180.0 or payload.longitude > 180.0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Longitude must be between -180 and 180 degrees."
+        )
+
+    location_parts = []
+    if payload.city and payload.city.strip():
+        location_parts.append(payload.city.strip())
+    if payload.state and payload.state.strip():
+        location_parts.append(payload.state.strip())
+    if payload.country and payload.country.strip():
+        location_parts.append(payload.country.strip())
+
+    readable = payload.readable_address or (", ".join(location_parts) if location_parts else "Detected Location")
+
+    # Update User
+    current_user.latitude = payload.latitude
+    current_user.longitude = payload.longitude
+    current_user.city = payload.city
+    current_user.state = payload.state
+    current_user.country = payload.country
+    current_user.location = readable
+
+    # Update Provider Profile if exists
+    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    if profile:
+        profile.latitude = payload.latitude
+        profile.longitude = payload.longitude
+        profile.city = payload.city
+        profile.state = payload.state
+        profile.country = payload.country
+        profile.location = readable
+
+    db.commit()
+
+    return {
+        "success": True,
+        "location": readable,
+        "latitude": payload.latitude,
+        "longitude": payload.longitude,
+        "city": payload.city,
+        "state": payload.state,
+        "country": payload.country
+    }

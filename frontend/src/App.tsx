@@ -10,9 +10,10 @@ import { AuthScreen } from './components/AuthScreen';
 import { RoleSelector } from './components/RoleSelector';
 import { HeartHandshake, ShieldCheck, Accessibility, Globe, MessageSquareHeart, Sparkles } from 'lucide-react';
 import type { ProviderProfile, UserRole, NotificationRecord } from './types';
-import { translations, type Language } from './i18n';
+import { translations } from './i18n';
 import { getStoredLocalAuthSession, setStoredLocalAuthSession, supabase } from './services/supabase';
 import { saveUserRole, fetchUserProfile, fetchMyNotificationsApi, markNotificationReadApi, markAllNotificationsReadApi } from './services/api';
+import { useLanguage } from './context/LanguageContext';
 
 export function App() {
   const [session, setSession] = useState<any | null>(() => getStoredLocalAuthSession());
@@ -22,7 +23,7 @@ export function App() {
   const [customerSubTab, setCustomerSubTab] = useState<'overview' | 'find' | 'requests' | 'saved' | 'profile'>('overview');
   const [seniorSubTab, setSeniorSubTab] = useState<'create' | 'update' | 'requests' | 'profile'>('create');
 
-  const [language, setLanguage] = useState<Language>('en');
+  const { language, setLanguage } = useLanguage();
   const [fontSize, setFontSize] = useState<FontSize>(() => {
     return (localStorage.getItem('silverhands_font_size') as FontSize) || 'large';
   });
@@ -398,6 +399,7 @@ export function App() {
 
       {/* Proactive Notification Drawer */}
       <NotificationDrawer
+        language={language}
         isOpen={isNotificationDrawerOpen}
         onClose={() => setIsNotificationDrawerOpen(false)}
         notifications={notifications}

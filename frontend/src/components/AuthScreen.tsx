@@ -4,8 +4,10 @@ import { sendPhoneOtp, verifyPhoneOtp } from '../services/supabase';
 import { checkUserPhone, loginUserAccount, registerUserAccount, forgotPasswordApi } from '../services/api';
 import type { UserRole } from '../types';
 
+import type { Language } from '../i18n';
+
 interface AuthScreenProps {
-  language?: string;
+  language?: Language;
   onAuthenticated: (session: any, role?: UserRole, profileSetupCompleted?: boolean) => void;
 }
 

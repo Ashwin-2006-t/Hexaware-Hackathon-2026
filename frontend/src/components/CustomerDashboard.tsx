@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Search, Clock, Calendar, RefreshCw, AlertCircle, Star, Repeat, XCircle, 
-  Heart, User, CheckCircle2, MapPin, Phone, ArrowRight, Eye, Check, IndianRupee, ShieldCheck, X
+  Heart, User, CheckCircle2, MapPin, Phone, ArrowRight, Eye, Check, IndianRupee, ShieldCheck, X, Video
 } from 'lucide-react';
 import type { ServiceRequest, ProviderProfile } from '../types';
 import { 
@@ -10,6 +10,8 @@ import {
 } from '../services/api';
 import { CustomerMarketplace } from './CustomerMarketplace';
 import { ReviewModal } from './ReviewModal';
+import { VirtualRoomModal } from './VirtualRoomModal';
+import { CallActionModal } from './CallActionModal';
 import { getStoredLocalAuthSession } from '../services/supabase';
 import { type Language } from '../i18n';
 
@@ -67,6 +69,8 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
   const [paymentModalReq, setPaymentModalReq] = useState<ServiceRequest | null>(null);
   const [rejectingQuoteReq, setRejectingQuoteReq] = useState<ServiceRequest | null>(null);
   const [isRespondingQuote, setIsRespondingQuote] = useState(false);
+  const [activeVirtualRoomBookingId, setActiveVirtualRoomBookingId] = useState<string | null>(null);
+  const [activeCallRequestId, setActiveCallRequestId] = useState<string | null>(null);
 
   // Saved Providers State
   const [savedProviders, setSavedProviders] = useState<ProviderProfile[]>([]);
@@ -384,12 +388,32 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                       )}
                     </div>
 
-                    <button
-                      onClick={() => setSelectedDetailReq(req)}
-                      className="px-4 py-2 rounded-xl border border-blue-200 text-blue-900 font-bold text-xs hover:bg-blue-50 cursor-pointer self-start sm:self-auto min-h-[36px]"
-                    >
-                      View Details
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                      <button
+                        onClick={() => setActiveCallRequestId(req.id)}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold text-xs hover:bg-emerald-100 cursor-pointer flex items-center space-x-1"
+                      >
+                        <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Call</span>
+                      </button>
+
+                      {(req.status === 'ACCEPTED' || req.status === 'COMPLETED') && req.delivery_mode !== 'IN_PERSON' && (
+                        <button
+                          onClick={() => setActiveVirtualRoomBookingId(req.id)}
+                          className="px-3 py-1.5 rounded-xl bg-blue-900 text-white font-bold text-xs hover:bg-blue-950 cursor-pointer flex items-center space-x-1"
+                        >
+                          <Video className="w-3.5 h-3.5 text-blue-300" />
+                          <span>Class Room</span>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => setSelectedDetailReq(req)}
+                        className="px-4 py-1.5 rounded-xl border border-blue-200 text-blue-900 font-bold text-xs hover:bg-blue-50 cursor-pointer min-h-[36px]"
+                      >
+                        View Details
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -473,9 +497,9 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
           ) : filteredRequests.length === 0 ? (
             <div className="py-12 text-center bg-blue-50/40 rounded-2xl border border-dashed border-blue-200 space-y-3">
               <Clock className="w-10 h-10 text-blue-400 mx-auto" />
-              <h4 className="text-lg font-bold text-zinc-800">No Requests Found</h4>
+              <h4 className="text-lg font-bold text-zinc-800">No service requests yet</h4>
               <p className="text-xs text-zinc-500 max-w-md mx-auto">
-                Use "Find a Service" to discover senior providers and submit requests.
+                Find a local provider and create your first request.
               </p>
             </div>
           ) : (
@@ -1286,6 +1310,22 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Virtual Tuition Room Modal */}
+      {activeVirtualRoomBookingId && (
+        <VirtualRoomModal
+          bookingId={activeVirtualRoomBookingId}
+          onClose={() => setActiveVirtualRoomBookingId(null)}
+        />
+      )}
+
+      {/* Call Action Modal */}
+      {activeCallRequestId && (
+        <CallActionModal
+          requestId={activeCallRequestId}
+          onClose={() => setActiveCallRequestId(null)}
+        />
       )}
 
     </div>

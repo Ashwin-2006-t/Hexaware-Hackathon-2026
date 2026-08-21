@@ -13,30 +13,32 @@ router = APIRouter(prefix="/api/providers", tags=["Opportunity Engine"])
 RECENT_WINDOW_DAYS = 30
 
 def normalize_service_name(name: str) -> str:
-    """Normalize service/skill name by lowercasing, stripping punctuation, and removing common filler adjectives."""
+    """Normalize service/skill name by lowercasing, stripping punctuation, and removing filler adjectives."""
     if not name:
         return ""
     clean = re.sub(r'[^\w\s]', '', name.lower()).strip()
     # Remove common filler prefixes/suffixes
-    clean = re.sub(r'\b(express|custom|homemade|traditional|beginner|master|designer|quality|authentic|specialist)\b', '', clean)
+    clean = re.sub(r'\b(express|custom|homemade|traditional|beginner|master|designer|quality|authentic|specialist|neighborhood|neighbourhood)\b', '', clean)
     clean = re.sub(r'\s+', ' ', clean).strip()
     
-    # Map common alias equivalences
-    if any(k in clean for k in ["garment alteration", "garment fitting", "alteration", "fitting"]):
+    # Map candidate specific alias equivalences
+    if any(k in clean for k in ["bulk food", "festival food", "bulk snack", "festival snack", "snack order"]):
+        return "bulk food & snacks"
+    if any(k in clean for k in ["cooking class", "teach cooking", "recipe class"]):
+        return "cooking classes"
+    if any(k in clean for k in ["meal prep", "meal preparation"]):
+        return "meal prep"
+    if any(k in clean for k in ["garment alteration", "pant alteration", "fitting alteration"]):
         return "garment alteration"
-    if any(k in clean for k in ["blouse stitch", "saree blouse", "blouse"]):
+    if any(k in clean for k in ["blouse stitch", "saree blouse"]):
         return "blouse stitching"
-    if any(k in clean for k in ["embroidery", "aari"]):
-        return "hand embroidery"
-    if any(k in clean for k in ["sweet", "snack", "murukku", "adhirasam", "seedai"]):
-        return "sweets & snacks"
-    if any(k in clean for k in ["cook", "food", "catering", "tiffin"]):
-        return "cooking"
-    if any(k in clean for k in ["math", "mathematics"]):
-        return "math tutoring"
-    if any(k in clean for k in ["tutor", "teach", "hindi", "tamil", "english"]):
-        return "tutoring"
-    if any(k in clean for k in ["garden", "terrace", "plant"]):
+    if any(k in clean for k in ["aari embroidery", "aari hand embroidery", "designer embroidery"]):
+        return "aari embroidery"
+    if any(k in clean for k in ["math coaching", "math exam", "mathematics coaching"]):
+        return "math coaching"
+    if any(k in clean for k in ["language guidance", "homework guidance"]):
+        return "language homework guidance"
+    if any(k in clean for k in ["terrace garden care", "garden care"]):
         return "terrace garden care"
     return clean
 
@@ -69,17 +71,54 @@ def is_service_already_offered(candidate_service_name: str, profile: ProviderPro
     for srv in profile.services:
         if srv.name:
             srv_norm = normalize_service_name(srv.name)
-            if srv_norm == cand_norm or cand_norm in srv_norm or srv_norm in cand_norm:
+            if srv_norm == cand_norm:
                 return True
+
     for sk in profile.skills:
         if sk.name:
             sk_norm = normalize_service_name(sk.name)
-            if sk_norm == cand_norm or cand_norm in sk_norm or sk_norm in cand_norm:
+            if sk_norm == cand_norm:
                 return True
     return False
 
-def location_matches(senior_location: Optional[str], request_location: Optional[str]) -> bool:
-    """Check if request location is compatible with senior location."""
+def calculate_domain_avg_earning(domain: str, db: Session) -> Optional[float]:
+    """Calculate average service earning for a domain based on actual DB pricing data."""
+    prices = []
+    for p in db.query(ProviderProfile).all():
+        if p.price is not None and p.price > 0:
+            p_dom = get_senior_domain(p)
+            if p_dom == domain:
+                prices.append(p.price)
+    
+    for r in db.query(ServiceRequest).all():
+        if r.category and domain.lower() in r.category.lower():
+            if r.agreed_price and r.agreed_price > 0:
+                prices.append(r.agreed_price)
+            elif r.quote_amount and r.quote_amount > 0:
+                prices.append(r.quote_amount)
+
+    if prices:
+        return round(sum(prices) / len(prices), 0)
+    return None
+
+from app.services.matching_service import haversine_distance
+
+def location_matches(
+    senior_location: Optional[str], 
+    request_location: Optional[str],
+    senior_lat: Optional[float] = None,
+    senior_lon: Optional[float] = None,
+    req_lat: Optional[float] = None,
+    req_lon: Optional[float] = None,
+    max_radius_km: float = 50.0
+) -> bool:
+    """
+    Check if request location is compatible with senior location using real Haversine distance.
+    """
+    if senior_lat is not None and senior_lon is not None and req_lat is not None and req_lon is not None:
+        dist = haversine_distance(senior_lat, senior_lon, req_lat, req_lon)
+        return dist <= max_radius_km
+
     if not senior_location or not request_location:
         return True
     sen_clean = senior_location.lower()
@@ -88,7 +127,6 @@ def location_matches(senior_location: Optional[str], request_location: Optional[
     sen_parts = [p.strip() for p in sen_clean.split(',')]
     req_parts = [p.strip() for p in req_clean.split(',')]
     
-    # Check for match in city or locality
     for sp in sen_parts:
         if len(sp) > 2 and any(sp in rp or rp in sp for rp in req_parts):
             return True
@@ -118,8 +156,9 @@ def generate_recommendations_for_profile(profile: ProviderProfile, db: Session) 
         ServiceRequest.created_at >= cutoff
     ).all()
 
+    domain_avg_earning = calculate_domain_avg_earning(domain, db)
+
     # Domain candidates configuration
-    # Mapping of domain -> list of candidate recommendations with keywords & standard names
     domain_candidates = {
         "Food & Catering": [
             {
@@ -234,8 +273,10 @@ def generate_recommendations_for_profile(profile: ProviderProfile, db: Session) 
             if not matches_domain:
                 continue
 
-            # Check location compatibility
-            if not location_matches(senior_location, req.location):
+            # Check location compatibility via real Haversine geodesic distance
+            senior_lat = profile.latitude or (profile.user.latitude if profile.user else None)
+            senior_lon = profile.longitude or (profile.user.longitude if profile.user else None)
+            if not location_matches(senior_location, req.location, senior_lat=senior_lat, senior_lon=senior_lon, req_lat=req.latitude, req_lon=req.longitude):
                 continue
 
             # Check candidate keyword match
@@ -246,9 +287,10 @@ def generate_recommendations_for_profile(profile: ProviderProfile, db: Session) 
             total_domain_demand_count += demand_count
             if not already_offered:
                 all_demanded_already_offered = False
-                loc_label = senior_location or "your service area"
-                reason_msg = f"Customers in {loc_label} submitted {demand_count} {cand['keywords'][0]} request{'s' if demand_count > 1 else ''} in the last 30 days, and this service matches your {domain.lower()} profile."
+                loc_label = senior_location or "Chennai"
+                reason_msg = f"Customers in {loc_label} submitted {demand_count} {cand['keywords'][0]} request{'s' if demand_count > 1 else ''} in the last 30 days, matching your {domain.lower()} skills."
                 
+                calc_match_score = min(98, 70 + (demand_count * 5) + (len(cand["matched_skills"]) * 5))
                 suggestions.append(OpportunitySuggestionItem(
                     id=cand["id"],
                     title=cand["title"],
@@ -257,22 +299,24 @@ def generate_recommendations_for_profile(profile: ProviderProfile, db: Session) 
                     reason=reason_msg,
                     demand_count=demand_count,
                     time_window_days=RECENT_WINDOW_DAYS,
-                    location=senior_location or "Local Area",
+                    location=senior_location or "Chennai, Tamil Nadu",
                     category=domain,
                     confidence="high",
                     suggested_action="ADD_SERVICE",
                     suggested_service_name=cand_service_name,
                     suggested_description=cand["description"],
-                    badge_label="REAL MARKET DEMAND"
+                    badge_label="REAL MARKET DEMAND",
+                    estimated_earning=domain_avg_earning,
+                    match_score=calc_match_score
                 ))
 
-    # Formulate edge case status message if suggestions list is empty
+    # Empty state status message if suggestions list is empty
     status_msg = None
     if not suggestions:
-        if total_domain_demand_count > 0 and all_demanded_already_offered:
+        if all_demanded_already_offered and total_domain_demand_count > 0:
             status_msg = "Your current services already cover the recent local demand."
         else:
-            status_msg = "No new local service opportunities found in the last 30 days."
+            status_msg = "No matching local demand found yet."
 
     return SeniorOpportunitiesResponse(
         has_low_request_activity=(recent_request_count <= 2),
@@ -290,7 +334,7 @@ def get_my_opportunity_suggestions(
     Proactively identifies realistic service expansion opportunities for Seniors
     based on REAL customer demand in the last 30 days within their domain & location.
     """
-    if current_user.role != "SENIOR":
+    if current_user.role not in ["SENIOR", "SENIOR_SERVICE_PROVIDER"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only Senior Service Providers can access personalized profile recommendations."

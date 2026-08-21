@@ -6,6 +6,11 @@ from app.main import app
 client = TestClient(app)
 
 def setup_test_providers():
+    h_food = {"Authorization": "Bearer mock_jwt_token_food", "X-User-Id": "user_food", "X-User-Phone": "+919876543211"}
+    h_tailor = {"Authorization": "Bearer mock_jwt_token_tailor", "X-User-Id": "user_tailor", "X-User-Phone": "+919876543212"}
+    h_tutor = {"Authorization": "Bearer mock_jwt_token_tutor", "X-User-Id": "user_tutor", "X-User-Phone": "+919876543213"}
+    h_garden = {"Authorization": "Bearer mock_jwt_token_garden", "X-User-Id": "user_garden", "X-User-Phone": "+919876543214"}
+
     # 1. Food Provider
     p_food = client.post("/api/providers", json={
         "name": "Hari Food Specialist",
@@ -17,7 +22,7 @@ def setup_test_providers():
         "bio": "Specialized in dosa preparation, adhirasam, and murukku for family functions.",
         "skills": ["Dosa Preparation", "Tamil Sweets", "Function Catering"],
         "services": ["Dosa Preparation for Functions", "Traditional Sweets"]
-    }).json()
+    }, headers=h_food).json()
 
     # 2. Tailoring Provider
     p_tailor = client.post("/api/providers", json={
@@ -30,7 +35,7 @@ def setup_test_providers():
         "bio": "Custom saree blouse stitching and garment alterations for functions.",
         "skills": ["Saree Blouse Stitching", "Garment Alteration", "Aari Embroidery"],
         "services": ["Custom Blouse Stitching", "Express Alterations"]
-    }).json()
+    }, headers=h_tailor).json()
 
     # 3. Tutoring Provider
     p_tutor = client.post("/api/providers", json={
@@ -43,7 +48,7 @@ def setup_test_providers():
         "bio": "Experienced tutor providing Hindi language lessons for school children.",
         "skills": ["Hindi Language Teaching", "Child Tutoring"],
         "services": ["Hindi Language Lessons for Children"]
-    }).json()
+    }, headers=h_tutor).json()
 
     # 4. Gardening Provider
     p_garden = client.post("/api/providers", json={
@@ -56,7 +61,7 @@ def setup_test_providers():
         "bio": "Organic soil prep and balcony plant maintenance.",
         "skills": ["Terrace Gardening", "Plant Maintenance"],
         "services": ["Balcony Garden Setup"]
-    }).json()
+    }, headers=h_garden).json()
 
     return p_food, p_tailor, p_tutor, p_garden
 
@@ -119,10 +124,15 @@ def test_final_3_bugs():
 
     finally:
         # Cleanup
-        client.delete(f"/api/providers/{p_food['id']}")
-        client.delete(f"/api/providers/{p_tailor['id']}")
-        client.delete(f"/api/providers/{p_tutor['id']}")
-        client.delete(f"/api/providers/{p_garden['id']}")
+        h_food = {"Authorization": "Bearer mock_jwt_token_food", "X-User-Id": "user_food", "X-User-Phone": "+919876543211"}
+        h_tailor = {"Authorization": "Bearer mock_jwt_token_tailor", "X-User-Id": "user_tailor", "X-User-Phone": "+919876543212"}
+        h_tutor = {"Authorization": "Bearer mock_jwt_token_tutor", "X-User-Id": "user_tutor", "X-User-Phone": "+919876543213"}
+        h_garden = {"Authorization": "Bearer mock_jwt_token_garden", "X-User-Id": "user_garden", "X-User-Phone": "+919876543214"}
+
+        if isinstance(p_food, dict) and "id" in p_food: client.delete(f"/api/providers/{p_food['id']}", headers=h_food)
+        if isinstance(p_tailor, dict) and "id" in p_tailor: client.delete(f"/api/providers/{p_tailor['id']}", headers=h_tailor)
+        if isinstance(p_tutor, dict) and "id" in p_tutor: client.delete(f"/api/providers/{p_tutor['id']}", headers=h_tutor)
+        if isinstance(p_garden, dict) and "id" in p_garden: client.delete(f"/api/providers/{p_garden['id']}", headers=h_garden)
 
 if __name__ == "__main__":
     test_final_3_bugs()

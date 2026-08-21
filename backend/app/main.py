@@ -2,8 +2,8 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base, SessionLocal
-from app.routers import providers, skills, services, requests, matches, ai, seed, opportunities, users, reviews, saved_providers, notifications
-from app.models.domain import ProviderProfile
+from app.routers import providers, skills, services, requests, matches, ai, seed, opportunities, users, reviews, saved_providers, notifications, virtual_rooms, calls, ai_interview
+from app.models.domain import ProviderProfile, User, Review, ServiceRequest, VirtualRoom, CallLog, AIInterviewSession
 
 from sqlalchemy import text
 
@@ -42,10 +42,33 @@ with engine.connect() as conn:
         "ALTER TABLE service_requests ADD COLUMN payment_upi_id VARCHAR;",
         "ALTER TABLE service_requests ADD COLUMN payment_instructions TEXT;",
         "ALTER TABLE service_requests ADD COLUMN payment_confirmation_at DATETIME;",
-        "ALTER TABLE notifications ADD COLUMN whatsapp_status VARCHAR DEFAULT 'SENT (DEMO)';",
+        "ALTER TABLE notifications ADD COLUMN whatsapp_message_id VARCHAR;",
+        "ALTER TABLE notifications ADD COLUMN whatsapp_recipient VARCHAR;",
+        "ALTER TABLE notifications ADD COLUMN whatsapp_type VARCHAR;",
+        "ALTER TABLE notifications ADD COLUMN whatsapp_status VARCHAR;",
         "ALTER TABLE notifications ADD COLUMN whatsapp_phone VARCHAR;",
         "ALTER TABLE notifications ADD COLUMN whatsapp_message TEXT;",
-        "ALTER TABLE notifications ADD COLUMN whatsapp_sent_at DATETIME;"
+        "ALTER TABLE notifications ADD COLUMN whatsapp_sent_at VARCHAR;",
+        "ALTER TABLE notifications ADD COLUMN whatsapp_delivered_at VARCHAR;",
+        "ALTER TABLE notifications ADD COLUMN whatsapp_read_at VARCHAR;",
+        "ALTER TABLE notifications ADD COLUMN whatsapp_failed_at VARCHAR;",
+        "ALTER TABLE notifications ADD COLUMN whatsapp_error_details TEXT;",
+        "ALTER TABLE notifications ADD COLUMN is_cleared BOOLEAN DEFAULT 0;",
+        "ALTER TABLE ai_interview_sessions ADD COLUMN session_type VARCHAR DEFAULT 'REGISTRATION';",
+        "ALTER TABLE ai_interview_sessions ADD COLUMN language VARCHAR DEFAULT 'en';",
+        "ALTER TABLE ai_interview_sessions ADD COLUMN existing_profile_snapshot TEXT;",
+        "ALTER TABLE users ADD COLUMN city VARCHAR;",
+        "ALTER TABLE users ADD COLUMN state VARCHAR;",
+        "ALTER TABLE users ADD COLUMN country VARCHAR;",
+        "ALTER TABLE provider_profiles ADD COLUMN location VARCHAR;",
+        "ALTER TABLE provider_profiles ADD COLUMN latitude FLOAT;",
+        "ALTER TABLE provider_profiles ADD COLUMN longitude FLOAT;",
+        "ALTER TABLE provider_profiles ADD COLUMN city VARCHAR;",
+        "ALTER TABLE provider_profiles ADD COLUMN state VARCHAR;",
+        "ALTER TABLE provider_profiles ADD COLUMN country VARCHAR;",
+        "ALTER TABLE provider_profiles ADD COLUMN service_delivery_mode VARCHAR DEFAULT 'BOTH';",
+        "ALTER TABLE services ADD COLUMN delivery_mode VARCHAR DEFAULT 'BOTH';",
+        "ALTER TABLE service_requests ADD COLUMN delivery_mode VARCHAR DEFAULT 'BOTH';"
     ]:
         try:
             conn.execute(text(migration_sql))
@@ -77,10 +100,13 @@ app.include_router(services.router)
 app.include_router(requests.router)
 app.include_router(matches.router)
 app.include_router(ai.router)
+app.include_router(ai_interview.router)
 app.include_router(seed.router)
 app.include_router(reviews.router)
 app.include_router(saved_providers.router)
 app.include_router(notifications.router)
+app.include_router(virtual_rooms.router)
+app.include_router(calls.router)
 
 @app.on_event("startup")
 def auto_seed_on_startup():
@@ -104,6 +130,33 @@ def health_check():
         "version": "1.0.0",
         "environment": "production"
     }
+
+@app.get("/api/health/db-check")
+def db_health_check():
+    db = SessionLocal()
+    try:
+        provider_count = db.query(ProviderProfile).count()
+        review_count = db.query(Review).count()
+        request_count = db.query(ServiceRequest).count()
+        user_count = db.query(User).count()
+        virtual_room_count = db.query(VirtualRoom).count()
+        call_log_count = db.query(CallLog).count()
+        from app.database import DATABASE_URL
+        runtime_db = "SQLite (" + DATABASE_URL + ")" if "sqlite" in DATABASE_URL else "Supabase PostgreSQL"
+        return {
+            "status": "healthy",
+            "runtime_database": runtime_db,
+            "persisted_records": {
+                "users": user_count,
+                "provider_profiles": provider_count,
+                "reviews": review_count,
+                "service_requests": request_count,
+                "virtual_rooms": virtual_room_count,
+                "call_logs": call_log_count
+            }
+        }
+    finally:
+        db.close()
 
 if __name__ == "__main__":
     import uvicorn
