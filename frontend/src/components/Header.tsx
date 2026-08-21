@@ -44,6 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
   const tabs = [
     { id: 'marketplace', label: t.navMarketplace, icon: Store },
     { id: 'map', label: t.navMap || 'Live Map', icon: Compass },
+    { id: 'family', label: t.navFamilyCircle || 'Family Circle', icon: HeartHandshake },
     { id: 'opportunities', label: t.navOpportunities, icon: TrendingUp },
     { id: 'smart-match', label: t.navSmartMatch, icon: Search },
     { id: 'skill-builder', label: t.navSkillBuilder, icon: Wand2 },

@@ -57,9 +57,13 @@ def calculate_match_score(
         proximity_score = max(4.0, 25.0 * (1.0 - (distance_km / max_distance_km)))
         
     # 3. Rating & Reviews (15 Points)
-    rating_factor = min(max(provider_rating, 3.0) / 5.0, 1.0)
-    rating_score = round(rating_factor * 15.0, 1)
-    
+    if provider_rating > 0:
+        rating_factor = min(max(provider_rating, 1.0) / 5.0, 1.0)
+        rating_score = round(rating_factor * 15.0, 1)
+    else:
+        # Neutral baseline for newly registered verified providers without reviews yet
+        rating_score = 11.0
+
     # 4. Senior Experience (10 Points)
     exp_factor = min(max(years_experience, 1) / 30.0, 1.0)
     exp_score = round(exp_factor * 10.0, 1)
@@ -91,6 +95,8 @@ def calculate_match_score(
         match_reasons.append(f"✓ Top Rated ({provider_rating}★)")
     elif provider_rating >= 4.0:
         match_reasons.append(f"✓ Verified Rating ({provider_rating}★)")
+    elif provider_rating > 0:
+        match_reasons.append(f"✓ Community Rated ({provider_rating}★)")
         
     if completed_services_count >= 5:
         match_reasons.append(f"✓ {completed_services_count} Services Completed")

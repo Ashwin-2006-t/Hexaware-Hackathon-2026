@@ -23,7 +23,8 @@ from app.schemas.domain import (
     ReadinessResponse, ReadinessChecklistItem,
     WorkSampleResponse, WorkSampleCreate,
     ProfileMediaResponse, ProfileMediaCreate,
-    VideoResponse, VideoCreate, VideoUpdate
+    VideoResponse, VideoCreate, VideoUpdate,
+    RatingBreakdownResponse, ReviewResponse
 )
 
 router = APIRouter()
@@ -93,7 +94,7 @@ def get_provider_profile(provider_id: int, db: Session = Depends(get_db)):
     reviews = db.query(Review).filter(Review.provider_id == provider.id).all()
     bookings_count = db.query(Booking).filter(Booking.provider_id == provider.id, Booking.status == "completed").count()
 
-    avg_rating = 5.0
+    avg_rating = 0.0
     if reviews:
         avg_rating = round(sum(r.rating for r in reviews) / len(reviews), 1)
 
@@ -162,6 +163,37 @@ def get_provider_profile(provider_id: int, db: Session = Depends(get_db)):
             } for r in reviews
         ]
     }
+
+
+@router.get("/{provider_id}/rating", response_model=RatingBreakdownResponse, summary="Get Provider Rating Breakdown")
+def get_provider_rating_breakdown(provider_id: int, db: Session = Depends(get_db)):
+    """Calculates real average rating and 1-5 star distribution from stored reviews."""
+    from app.api.v1.endpoints.reviews import calculate_provider_rating_stats
+    provider = db.query(User).filter(User.id == provider_id).first()
+    if not provider:
+        raise HTTPException(status_code=404, detail="Provider not found")
+    stats = calculate_provider_rating_stats(provider_id, db)
+    return RatingBreakdownResponse(**stats)
+
+
+@router.get("/{provider_id}/reviews", response_model=List[ReviewResponse], summary="Get Provider Reviews")
+def get_provider_reviews_alias(provider_id: int, db: Session = Depends(get_db)):
+    """Returns all authentic reviews for a provider."""
+    reviews = db.query(Review).filter(Review.provider_id == provider_id).order_by(Review.created_at.desc()).all()
+    results = []
+    for r in reviews:
+        cust = db.query(User).filter(User.id == r.customer_id).first()
+        results.append(ReviewResponse(
+            id=r.id,
+            booking_id=r.booking_id,
+            customer_id=r.customer_id,
+            provider_id=r.provider_id,
+            rating=r.rating,
+            comment=r.comment,
+            created_at=r.created_at.isoformat() if r.created_at else "",
+            customer_name=str(cust.full_name) if (cust and cust.full_name) else "Verified Client"
+        ))
+    return results
 
 
 @router.put("/{provider_id}", response_model=UserResponse, summary="Update Provider Profile")

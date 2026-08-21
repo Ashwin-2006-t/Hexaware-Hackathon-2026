@@ -102,7 +102,17 @@ def init_db(force_recreate: bool = False):
                     conn.execute(text("ALTER TABLE users ADD COLUMN readiness_score INTEGER DEFAULT 70;"))
                 if 'service_radius' not in user_columns:
                     conn.execute(text("ALTER TABLE users ADD COLUMN service_radius FLOAT DEFAULT 10.0;"))
-                conn.commit()
+            if 'bookings' in inspector.get_table_names():
+                booking_columns = {col['name'] for col in inspector.get_columns('bookings')}
+                if 'virtual_meeting_id' not in booking_columns:
+                    conn.execute(text("ALTER TABLE bookings ADD COLUMN virtual_meeting_id VARCHAR;"))
+                if 'virtual_meeting_url' not in booking_columns:
+                    conn.execute(text("ALTER TABLE bookings ADD COLUMN virtual_meeting_url VARCHAR;"))
+            if 'reviews' in inspector.get_table_names():
+                review_columns = {col['name'] for col in inspector.get_columns('reviews')}
+                if 'updated_at' not in review_columns:
+                    conn.execute(text("ALTER TABLE reviews ADD COLUMN updated_at TIMESTAMP;"))
+            conn.commit()
     except Exception as e:
         logger.debug(f"Schema column check: {e}")
 

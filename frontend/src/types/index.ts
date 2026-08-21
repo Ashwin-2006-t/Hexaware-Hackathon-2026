@@ -407,5 +407,145 @@ export interface LocationAutocompleteResponse {
   suggestions: LocationSuggestion[]
 }
 
+export interface RatingBreakdown {
+  provider_id: number
+  average_rating: number
+  total_reviews: number
+  display_label: string
+  star_distribution: {
+    1: number
+    2: number
+    3: number
+    4: number
+    5: number
+  }
+}
 
+export interface VirtualCallResponse {
+  booking_id: number
+  service_id: number
+  service_title: string
+  provider_id: number
+  provider_name: string
+  customer_id: number
+  customer_name: string
+  scheduled_date: string
+  room_id: string
+  meeting_url: string
+  provider_type: string
+  is_authorized: boolean
+  status: string
+  created_at: string
+}
 
+export interface FamilyPermissionItem {
+  permission: 'VIEW_BOOKINGS' | 'VIEW_SERVICE_DETAILS' | 'VIEW_PROVIDER_DETAILS' | 'RECEIVE_NOTIFICATIONS' | 'HELP_WITH_REQUESTS' | string
+  enabled: boolean
+  label?: string
+  description?: string
+}
+
+export interface FamilyMember {
+  relationship_id: number
+  senior_user_id: number
+  senior_name: string
+  family_user_id: number
+  family_name: string
+  family_email: string
+  family_phone?: string
+  relationship_type: string
+  status: string
+  created_at: string
+  accepted_at?: string
+  permissions: FamilyPermissionItem[]
+}
+
+export interface FamilyInvitationItem {
+  id: number
+  email_or_phone: string
+  relationship_type: string
+  token: string
+  status: string
+  invite_url: string
+  expires_at: string
+  created_at: string
+  is_expired: boolean
+}
+
+export interface FamilyInviteResponse {
+  message: string
+  invitation_id: number
+  email_or_phone: string
+  relationship_type: string
+  token: string
+  invite_url: string
+  expires_at: string
+}
+
+export interface FamilyInvitationDetailResponse {
+  id: number
+  senior_user_id: number
+  senior_name: string
+  email_or_phone: string
+  relationship_type: string
+  token: string
+  status: string
+  expires_at: string
+  is_expired: boolean
+}
+
+export interface FamilyCircleResponse {
+  senior_user_id: number
+  senior_name: string
+  total_active_members: number
+  members: FamilyMember[]
+  pending_invitations: FamilyInvitationItem[]
+  available_permission_types: Array<{ key: string; label: string; description: string }>
+}
+
+export interface ConnectedSenior {
+  relationship_id: number
+  senior_user_id: number
+  senior_name: string
+  senior_avatar?: string
+  senior_location?: string
+  relationship_type: string
+  status: string
+  permissions: Record<string, boolean>
+}
+
+export interface SeniorDashboardForFamily {
+  senior: {
+    id: number
+    full_name: string
+    avatar_url?: string
+    location_name?: string
+    user_type?: string
+    completed_services_count: number
+    trust_badge_level: string
+  }
+  relationship: {
+    id: number
+    relationship_type: string
+    status: string
+    connected_since: string
+  }
+  granted_permissions: string[]
+  upcoming_bookings?: any[]
+  services_summary?: Array<{
+    id: number
+    title: string
+    category: string
+    price_per_hour: number
+    service_area?: string
+    status: string
+  }>
+  notifications?: Array<{
+    id: number
+    title: string
+    message: string
+    type: string
+    created_at: string
+  }>
+  can_help_with_requests: boolean
+}

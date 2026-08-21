@@ -2,7 +2,10 @@ import datetime
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.db.session import get_db, init_db
-from app.models.domain import User, Skill, ServiceListing, Booking, Review, OpportunityInterest, Video, Notification, Opportunity
+from app.models.domain import (
+    User, Skill, ServiceListing, Booking, Review, OpportunityInterest,
+    Video, Notification, Opportunity, FamilyRelationship, FamilyPermission, FamilyInvitation
+)
 from app.core.security import get_password_hash
 from app.api.v1.endpoints.opportunities import DEFAULT_OPPORTUNITIES
 
@@ -14,6 +17,9 @@ def seed_database(db: Session = Depends(get_db)):
     init_db(force_recreate=True)
 
     # Clear existing data if present to ensure clean seed
+    db.query(FamilyPermission).delete()
+    db.query(FamilyRelationship).delete()
+    db.query(FamilyInvitation).delete()
     db.query(Notification).delete()
     db.query(Video).delete()
     db.query(OpportunityInterest).delete()

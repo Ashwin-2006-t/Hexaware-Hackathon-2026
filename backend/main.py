@@ -7,6 +7,8 @@ from app.api.v1.router import api_router
 from app.db.session import init_db
 
 logging.basicConfig(level=logging.INFO)
+
+
 logger = logging.getLogger("silverhands")
 
 @asynccontextmanager

@@ -11,15 +11,18 @@ import { api } from '../services/api'
 import { formatINR } from '../utils/formatters'
 import { translations, type Language } from '../i18n/translations'
 import { LocationAutocomplete } from './LocationAutocomplete'
+import { ReviewModal } from './ReviewModal'
+import type { RatingBreakdown } from '../types'
 
 interface DashboardProps {
   highContrast: boolean
   currentUser: User | null
   setCurrentUser: (user: User | null) => void
   language?: Language
+  onStartVirtualCall?: (bookingId: number) => void
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser, setCurrentUser, language = 'en' }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser, setCurrentUser, language = 'en', onStartVirtualCall }) => {
   const t = translations[language]
 
   const [activeTab, setActiveTab] = useState<'opportunities' | 'recommendations' | 'videos' | 'bookings' | 'services' | 'passport' | 'samples'>('opportunities')
@@ -78,10 +81,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
   const [serviceSaving, setServiceSaving] = useState<boolean>(false)
 
   // Review Modal State
-  const [reviewBookingId, setReviewBookingId] = useState<number | null>(null)
-  const [rating, setRating] = useState<number>(5)
-  const [comment, setComment] = useState<string>('Wonderful senior experience! Highly recommended.')
-  const [reviewSubmitting, setReviewSubmitting] = useState<boolean>(false)
+  const [selectedBookingForReview, setSelectedBookingForReview] = useState<Booking | null>(null)
+  const [ratingBreakdown, setRatingBreakdown] = useState<RatingBreakdown | null>(null)
 
   // Dedicated Video Gallery & Management State
   const [showVideoModal, setShowVideoModal] = useState<boolean>(false)
@@ -109,14 +110,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
   const loadDashboardData = async () => {
     const userId = currentUser?.id || 1
     try {
-      const [bookingsData, servicesData, oppsData, passport, samples, videosData, recsData] = await Promise.all([
+      const [bookingsData, servicesData, oppsData, passport, samples, videosData, recsData, ratingStats] = await Promise.all([
         api.getUserBookings(userId).catch(() => []),
         api.getServices().catch(() => []),
         api.getProviderOpportunities(userId).catch(() => ({ provider_id: userId, opportunities: [], total: 0 })),
         api.getSkillPassport(userId).catch(() => null),
         api.getWorkSamples(userId).catch(() => []),
         api.getProviderVideos(userId).catch(() => []),
-        api.getOpportunityRecommendations(userId).catch(() => ({ recommendations: [] }))
+        api.getOpportunityRecommendations(userId).catch(() => ({ recommendations: [] })),
+        api.getProviderRating(userId).catch(() => null)
       ])
       setBookings(bookingsData)
       setServices(servicesData.filter((s) => s.provider_id === userId))
@@ -125,6 +127,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
       setWorkSamples(samples)
       setVideos(videosData)
       setRecommendations(recsData.recommendations || [])
+      setRatingBreakdown(ratingStats)
     } catch (err: any) {
       console.error(err)
     }
@@ -431,21 +434,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
     }
   }
 
-  const handleSubmitReview = async () => {
-    if (!reviewBookingId) return
-    setReviewSubmitting(true)
-    try {
-      await api.submitReview(reviewBookingId, rating, comment, currentUser?.id || 2)
-      alert('Thank you! Your verified review has been posted.')
-      setReviewBookingId(null)
-      loadDashboardData()
-    } catch (err: any) {
-      alert(`Review error: ${err.message}`)
-    } finally {
-      setReviewSubmitting(false)
-    }
-  }
-
   // Video Management Handlers
   const handleSaveVideo = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -735,7 +723,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
             }`}>
               <span className="text-[10px] font-bold text-slate-500 uppercase block">{t.avgRating}</span>
               <span className="text-lg font-black text-amber-500 flex items-center justify-center gap-1">
-                <Star className="w-4 h-4 fill-amber-400" /> 5.0
+                <Star className="w-4 h-4 fill-amber-400" /> {ratingBreakdown ? (ratingBreakdown.average_rating > 0 ? ratingBreakdown.average_rating : 'New') : '5.0'}
               </span>
             </div>
             <div className={`p-3 rounded-xl border text-center ${
@@ -1549,11 +1537,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
                       <span className="text-xl font-black text-slate-900">{formatINR(booking.total_price)}</span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {(booking.status === 'confirmed' || booking.status === 'completed') && onStartVirtualCall && (
+                        <button
+                          onClick={() => onStartVirtualCall(booking.id)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded-xl font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
+                          title="Start or Join Virtual Video Consultation"
+                        >
+                          <Video className="w-3.5 h-3.5" />
+                          <span>{t.startVirtualCall || 'Virtual Call'}</span>
+                        </button>
+                      )}
+
                       {booking.status === 'pending' && (
                         <button
                           onClick={() => handleUpdateStatus(booking.id, 'confirmed')}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs py-2 px-4 rounded-xl font-bold"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs py-2 px-4 rounded-xl font-bold cursor-pointer"
                         >
                           {t.acceptBooking}
                         </button>
@@ -1562,7 +1561,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
                       {booking.status === 'confirmed' && (
                         <button
                           onClick={() => handleUpdateStatus(booking.id, 'completed')}
-                          className="bg-[#4B32E6] hover:bg-[#3D26D1] text-white text-xs py-2 px-4 rounded-xl font-bold shadow-sm"
+                          className="bg-[#4B32E6] hover:bg-[#3D26D1] text-white text-xs py-2 px-4 rounded-xl font-bold shadow-sm cursor-pointer"
                         >
                           {t.markCompleted}
                         </button>
@@ -1570,8 +1569,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
 
                       {booking.status === 'completed' && (
                         <button
-                          onClick={() => setReviewBookingId(booking.id)}
-                          className="bg-amber-500 hover:bg-amber-600 text-white text-xs py-2 px-3.5 rounded-xl font-bold flex items-center gap-1"
+                          onClick={() => setSelectedBookingForReview(booking)}
+                          className="bg-amber-500 hover:bg-amber-600 text-white text-xs py-2 px-3.5 rounded-xl font-bold flex items-center gap-1 cursor-pointer"
                         >
                           <Star className="w-3.5 h-3.5 fill-current" />
                           <span>{t.leaveReview}</span>
@@ -1867,60 +1866,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Review Modal */}
-      {reviewBookingId && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="max-w-md w-full p-6 space-y-4 rounded-2xl bg-white text-slate-900 border border-slate-200 shadow-2xl">
-            <h3 className="text-xl font-black">Submit Review</h3>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-2">Select Star Rating</label>
-              <div className="flex items-center gap-1.5">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => setRating(star)}
-                    className="p-1 cursor-pointer"
-                  >
-                    <Star
-                      className={`w-6 h-6 ${
-                        star <= rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Feedback Comment</label>
-              <textarea
-                rows={3}
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs font-medium"
-              />
-            </div>
-
-            <div className="flex gap-2.5 pt-2">
-              <button
-                onClick={() => setReviewBookingId(null)}
-                className="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs py-2.5 rounded-xl font-bold"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmitReview}
-                disabled={reviewSubmitting}
-                className="w-1/2 bg-[#4B32E6] hover:bg-[#3D26D1] text-white text-xs py-2.5 rounded-xl font-bold shadow-sm"
-              >
-                {reviewSubmitting ? 'Posting...' : 'Submit Review'}
-              </button>
-            </div>
           </div>
         </div>
       )}
@@ -2244,6 +2189,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ highContrast, currentUser,
             />
           </div>
         </div>
+      )}
+
+      {/* Review Modal */}
+      {selectedBookingForReview && (
+        <ReviewModal
+          booking={selectedBookingForReview}
+          onClose={() => setSelectedBookingForReview(null)}
+          onSuccess={() => {
+            setSelectedBookingForReview(null)
+            loadDashboardData()
+          }}
+          language={language}
+          highContrast={highContrast}
+        />
       )}
     </div>
   )

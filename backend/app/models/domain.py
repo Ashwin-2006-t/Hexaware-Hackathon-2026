@@ -43,6 +43,11 @@ class User(Base):
     videos = relationship("Video", back_populates="provider", cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
 
+    # Family Circle Relationships
+    family_members = relationship("FamilyRelationship", foreign_keys="[FamilyRelationship.senior_user_id]", back_populates="senior", cascade="all, delete-orphan")
+    senior_connections = relationship("FamilyRelationship", foreign_keys="[FamilyRelationship.family_user_id]", back_populates="family_member", cascade="all, delete-orphan")
+    family_invitations = relationship("FamilyInvitation", back_populates="senior", cascade="all, delete-orphan")
+
 
 class Skill(Base):
     __tablename__ = "skills"
@@ -94,6 +99,8 @@ class Booking(Base):
     total_price = Column(Float, nullable=False)  # ₹ INR
     scheduled_date = Column(String, nullable=False)
     notes = Column(Text, nullable=True)
+    virtual_meeting_id = Column(String, nullable=True)
+    virtual_meeting_url = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     customer = relationship("User", foreign_keys=[customer_id], back_populates="bookings_as_customer")
@@ -106,16 +113,21 @@ class Review(Base):
     __tablename__ = "reviews"
 
     id = Column(Integer, primary_key=True, index=True)
-    booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=False)
+    booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=False, unique=True)
     customer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     provider_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     rating = Column(Integer, nullable=False)  # 1 to 5
     comment = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
     booking = relationship("Booking", back_populates="review")
     customer = relationship("User", foreign_keys=[customer_id], back_populates="reviews_given")
     provider = relationship("User", foreign_keys=[provider_id], back_populates="reviews_received")
+
+    @property
+    def reviewer_id(self) -> int:
+        return self.customer_id
 
 
 class OpportunityInterest(Base):
@@ -199,12 +211,57 @@ class Notification(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    type = Column(String, default="opportunity")  # 'opportunity', 'expansion', 'profile', 'availability', 'pricing', 'work_sample', 'interest'
+    type = Column(String, default="opportunity")  # 'opportunity', 'expansion', 'profile', 'availability', 'pricing', 'work_sample', 'interest', 'review', 'video_call', 'family'
     title = Column(String, nullable=False)
     message = Column(Text, nullable=False)
-    action = Column(String, nullable=True)  # 'radius_settings', 'video_upload', 'profile_editor', 'availability', 'opportunity_engine', 'map', 'view_opportunity'
+    action = Column(String, nullable=True)  # 'radius_settings', 'video_upload', 'profile_editor', 'availability', 'opportunity_engine', 'map', 'view_opportunity', 'view_review', 'join_call', 'family_circle'
     action_payload = Column(String, nullable=True)
     read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     user = relationship("User", back_populates="notifications")
+
+
+# --- Family Circle Models ---
+
+class FamilyRelationship(Base):
+    __tablename__ = "family_relationships"
+
+    id = Column(Integer, primary_key=True, index=True)
+    senior_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    family_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    relationship_type = Column(String, default="Family Member")  # 'Son', 'Daughter', 'Grandchild', 'Spouse', 'Caregiver', 'Relative'
+    status = Column(String, default="active")  # 'active', 'inactive', 'paused'
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    accepted_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    senior = relationship("User", foreign_keys=[senior_user_id], back_populates="family_members")
+    family_member = relationship("User", foreign_keys=[family_user_id], back_populates="senior_connections")
+    permissions = relationship("FamilyPermission", back_populates="relationship", cascade="all, delete-orphan")
+
+
+class FamilyPermission(Base):
+    __tablename__ = "family_permissions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    relationship_id = Column(Integer, ForeignKey("family_relationships.id"), nullable=False, index=True)
+    permission = Column(String, nullable=False)  # 'VIEW_BOOKINGS', 'VIEW_SERVICE_DETAILS', 'VIEW_PROVIDER_DETAILS', 'RECEIVE_NOTIFICATIONS', 'HELP_WITH_REQUESTS'
+    enabled = Column(Boolean, default=False)
+
+    relationship = relationship("FamilyRelationship", back_populates="permissions")
+
+
+class FamilyInvitation(Base):
+    __tablename__ = "family_invitations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    senior_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    email_or_phone = Column(String, nullable=False, index=True)
+    relationship_type = Column(String, default="Family Member")
+    token = Column(String, unique=True, index=True, nullable=False)
+    status = Column(String, default="pending")  # 'pending', 'accepted', 'rejected', 'expired'
+    initial_permissions = Column(Text, nullable=True)  # Comma-separated list e.g. "VIEW_BOOKINGS,RECEIVE_NOTIFICATIONS"
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    senior = relationship("User", back_populates="family_invitations")

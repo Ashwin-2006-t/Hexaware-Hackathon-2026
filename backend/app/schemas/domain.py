@@ -479,3 +479,115 @@ class VideoResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
+# --- Rating Breakdown Schema ---
+class RatingBreakdownResponse(BaseModel):
+    provider_id: int
+    average_rating: float
+    total_reviews: int
+    display_label: str  # e.g. "⭐ 4.4 · Based on 5 reviews"
+    star_distribution: Dict[int, int]  # {5: x, 4: y, 3: z, 2: w, 1: v}
+
+
+# --- Virtual Video Call Schemas ---
+class VirtualCallResponse(BaseModel):
+    booking_id: int
+    service_id: int
+    service_title: str
+    provider_id: int
+    provider_name: str
+    customer_id: int
+    customer_name: str
+    scheduled_date: str
+    room_id: str
+    meeting_url: str
+    provider_type: str = "jitsi"
+    is_authorized: bool = True
+    status: str
+    created_at: str
+
+
+class VirtualCallNotifyRequest(BaseModel):
+    booking_id: int
+    message: Optional[str] = None
+
+
+# --- Family Circle Schemas ---
+class FamilyPermissionItem(BaseModel):
+    permission: str  # 'VIEW_BOOKINGS', 'VIEW_SERVICE_DETAILS', 'VIEW_PROVIDER_DETAILS', 'RECEIVE_NOTIFICATIONS', 'HELP_WITH_REQUESTS'
+    enabled: bool
+    label: Optional[str] = None
+    description: Optional[str] = None
+
+
+class FamilyMemberResponse(BaseModel):
+    relationship_id: int
+    senior_user_id: int
+    senior_name: str
+    family_user_id: int
+    family_name: str
+    family_email: str
+    family_phone: Optional[str] = None
+    relationship_type: str
+    status: str
+    created_at: str
+    accepted_at: Optional[str] = None
+    permissions: List[FamilyPermissionItem]
+
+
+class FamilyPermissionUpdateRequest(BaseModel):
+    permissions: Dict[str, bool]  # e.g. {"VIEW_BOOKINGS": True, "RECEIVE_NOTIFICATIONS": False}
+
+
+class FamilyInviteCreate(BaseModel):
+    email_or_phone: str
+    relationship_type: str = "Family Member"
+    permissions: Optional[Dict[str, bool]] = None  # optional initial permissions
+
+
+class FamilyInviteResponse(BaseModel):
+    id: int
+    senior_user_id: int
+    senior_name: str
+    email_or_phone: str
+    relationship_type: str
+    token: str
+    status: str
+    invite_url: str
+    expires_at: str
+    created_at: str
+
+
+class FamilyInvitationDetailResponse(BaseModel):
+    token: str
+    senior_user_id: int
+    senior_name: str
+    senior_location: Optional[str] = None
+    email_or_phone: str
+    relationship_type: str
+    status: str
+    expires_at: str
+    is_expired: bool
+
+
+class ConnectedSeniorResponse(BaseModel):
+    relationship_id: int
+    senior_user_id: int
+    senior_name: str
+    senior_avatar: Optional[str] = None
+    senior_location: Optional[str] = None
+    relationship_type: str
+    status: str
+    permissions: Dict[str, bool]
+
+
+class SeniorDashboardForFamilyResponse(BaseModel):
+    senior: Dict[str, Any]
+    relationship: Dict[str, Any]
+    granted_permissions: List[str]
+    upcoming_bookings: Optional[List[BookingResponse]] = None
+    services_summary: Optional[List[Dict[str, Any]]] = None
+    notifications: Optional[List[Dict[str, Any]]] = None
+    can_help_with_requests: bool = False
+
+

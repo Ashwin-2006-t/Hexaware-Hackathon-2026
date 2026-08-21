@@ -99,6 +99,16 @@ export interface TranslationDict {
   markAllRead: string
   noNotifications: string
   noVideos: string
+  navFamilyCircle: string
+  startVirtualCall: string
+  contactProvider: string
+  joinCall: string
+  prejoinTitle: string
+  rateReviewTitle: string
+  ratingBasedOn: string
+  familyCircleTitle: string
+  addFamilyMember: string
+  seniorDashboardTitle: string
 }
 
 export const translations: Record<Language, TranslationDict> = {
@@ -200,7 +210,17 @@ export const translations: Record<Language, TranslationDict> = {
     currentLocation: "Your Live Location",
     markAllRead: "Mark All as Read",
     noNotifications: "No new notifications right now. Your quiet insights will appear here.",
-    noVideos: "No videos uploaded yet. Add a short 30-second craft or cooking introduction!"
+    noVideos: "No videos uploaded yet. Add a short 30-second craft or cooking introduction!",
+    navFamilyCircle: "Family Circle",
+    startVirtualCall: "Start Virtual Call",
+    contactProvider: "Contact Provider",
+    joinCall: "Join Video Call",
+    prejoinTitle: "Pre-Join Virtual Consultation",
+    rateReviewTitle: "Rate & Review Your Experience",
+    ratingBasedOn: "Based on real verified reviews",
+    familyCircleTitle: "Senior Family Circle & Permissions",
+    addFamilyMember: "Add Family Member",
+    seniorDashboardTitle: "Family Care & Senior Overview"
   },
   ta: {
     tagline: "வாழ்நாள் அனுபவங்களை புதிய வாய்ப்புகளாக மாற்றுங்கள்.",
@@ -300,7 +320,17 @@ export const translations: Record<Language, TranslationDict> = {
     currentLocation: "உங்கள் இருப்பிடம்",
     markAllRead: "அனைத்தையும் படித்ததாக குறி",
     noNotifications: "தற்போது புதிய அறிவிப்புகள் இல்லை.",
-    noVideos: "இன்னும் வீடியோக்கள் பதிவேற்றப்படவில்லை. உங்கள் 30-வினாடி கைவினை வீடியோவைச் சேர்க்கவும்!"
+    noVideos: "இன்னும் வீடியோக்கள் பதிவேற்றப்படவில்லை. உங்கள் 30-வினாடி கைவினை வீடியோவைச் சேர்க்கவும்!",
+    navFamilyCircle: "குடும்ப வட்டம்",
+    startVirtualCall: "வீடியோ அழைப்பைத் தொடங்கு",
+    contactProvider: "வழங்குநரைத் தொடர்பு கொள்ளவும்",
+    joinCall: "அழைப்பில் சேரவும்",
+    prejoinTitle: "முன்-இணைப்பு மெய்நிகர் ஆலோசனை",
+    rateReviewTitle: "மதிப்பீடு மற்றும் கருத்து வழங்கவும்",
+    ratingBasedOn: "உண்மையான சரிபார்க்கப்பட்ட மதிப்புரைகளின் அடிப்படையில்",
+    familyCircleTitle: "மூத்தோர் குடும்ப வட்டம் & அனுமதிகள்",
+    addFamilyMember: "குடும்ப உறுப்பினரைச் சேர்",
+    seniorDashboardTitle: "மூத்தோர் குடும்ப பராமரிப்பு மேலோட்டம்"
   },
   hi: {
     tagline: "आजीवन कौशल को नए अवसरों में बदलें।",
@@ -400,7 +430,17 @@ export const translations: Record<Language, TranslationDict> = {
     currentLocation: "आपका स्थान",
     markAllRead: "सभी को पढ़ा हुआ चिह्नित करें",
     noNotifications: "फ़िलहाल कोई नई सूचना नहीं है।",
-    noVideos: "अभी तक कोई वीडियो नहीं जोड़ा गया है। अपना 30-सेकंड का क्राफ्ट या कुकिंग वीडियो जोड़ें!"
+    noVideos: "अभी तक कोई वीडियो नहीं जोड़ा गया है। अपना 30-सेकंड का क्राफ्ट या कुकिंग वीडियो जोड़ें!",
+    navFamilyCircle: "फ़ैमिली सर्कल (परिवार)",
+    startVirtualCall: "वर्चुअल वीडियो कॉल शुरू करें",
+    contactProvider: "प्रदाता से संपर्क करें",
+    joinCall: "कॉल में शामिल हों",
+    prejoinTitle: "प्री-जॉइन वर्चुअल परामर्श",
+    rateReviewTitle: "रेटिंग और समीक्षा लिखें",
+    ratingBasedOn: "सत्यापित समीक्षाओं पर आधारित",
+    familyCircleTitle: "वरिष्ठ फ़ैमिली सर्कल और अनुमतियाँ",
+    addFamilyMember: "परिवार का सदस्य जोड़ें",
+    seniorDashboardTitle: "वरिष्ठ परिवार अवलोकन"
   }
 }
 

@@ -9,6 +9,8 @@ import { SmartMatch } from './components/SmartMatch'
 import { SkillExtractor } from './components/SkillExtractor'
 import { SeniorMentorBot } from './components/SeniorMentorBot'
 import { Dashboard } from './components/Dashboard'
+import { FamilyCircle } from './components/FamilyCircle'
+import { VirtualCallModal } from './components/VirtualCallModal'
 import { AuthModal } from './components/AuthModal'
 import type { User } from './types'
 import { api } from './services/api'
@@ -24,6 +26,7 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false)
   const [showNotifications, setShowNotifications] = useState<boolean>(false)
   const [unreadNotifCount, setUnreadNotifCount] = useState<number>(0)
+  const [activeVirtualCallBookingId, setActiveVirtualCallBookingId] = useState<number | null>(null)
 
   // System status state
   const [backendOnline, setBackendOnline] = useState<boolean>(false)
@@ -82,6 +85,11 @@ export default function App() {
     const savedLanguage = localStorage.getItem('silverhands_language') as Language
     if (savedLanguage && ['en', 'ta', 'hi'].includes(savedLanguage)) {
       setLanguage(savedLanguage)
+    }
+
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('invite')) {
+      setActiveTab('family')
     }
 
     checkBackend()
@@ -223,15 +231,35 @@ export default function App() {
           <SeniorMentorBot highContrast={highContrast} language={language} />
         )}
 
+        {activeTab === 'family' && (
+          <FamilyCircle
+            highContrast={highContrast}
+            currentUser={currentUser}
+            language={language}
+            onStartVirtualCall={(bookingId) => setActiveVirtualCallBookingId(bookingId)}
+          />
+        )}
+
         {activeTab === 'dashboard' && (
           <Dashboard
             highContrast={highContrast}
             currentUser={currentUser}
             setCurrentUser={setCurrentUser}
             language={language}
+            onStartVirtualCall={(bookingId) => setActiveVirtualCallBookingId(bookingId)}
           />
         )}
       </main>
+
+      {/* Virtual Video Call Modal */}
+      {activeVirtualCallBookingId !== null && (
+        <VirtualCallModal
+          bookingId={activeVirtualCallBookingId}
+          onClose={() => setActiveVirtualCallBookingId(null)}
+          language={language}
+          highContrast={highContrast}
+        />
+      )}
 
       {/* Quiet Insight Notifications Drawer */}
       <NotificationCenter

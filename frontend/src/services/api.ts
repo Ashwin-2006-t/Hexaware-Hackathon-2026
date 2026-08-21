@@ -3,6 +3,14 @@ import type {
   User,
   Booking,
   Review,
+  RatingBreakdown,
+  VirtualCallResponse,
+  FamilyCircleResponse,
+  FamilyMember,
+  FamilyInviteResponse,
+  FamilyInvitationDetailResponse,
+  ConnectedSenior,
+  SeniorDashboardForFamily,
   SkillExtractionResponse,
   SmartMatchResponse,
   AssistantChatResponse,
@@ -465,8 +473,8 @@ export const api = {
     return res.json()
   },
 
-  async submitReview(bookingId: number, rating: number, comment?: string, customerId: number = 2): Promise<Review> {
-    const res = await fetch(`${API_BASE}/reviews?customer_id=${customerId}`, {
+  async submitReview(bookingId: number, rating: number, comment?: string): Promise<Review> {
+    const res = await fetch(`${API_BASE}/reviews`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({ booking_id: bookingId, rating, comment })
@@ -474,6 +482,174 @@ export const api = {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
       throw new Error(err.detail || 'Failed to submit review')
+    }
+    return res.json()
+  },
+
+  async getProviderRating(providerId: number): Promise<RatingBreakdown> {
+    const res = await fetch(`${API_BASE}/providers/${providerId}/rating`, {
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) throw new Error('Failed to fetch provider rating breakdown')
+    return res.json()
+  },
+
+  async getProviderReviews(providerId: number): Promise<Review[]> {
+    const res = await fetch(`${API_BASE}/providers/${providerId}/reviews`, {
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) throw new Error('Failed to fetch provider reviews')
+    return res.json()
+  },
+
+  async getBookingReview(bookingId: number): Promise<Review | null> {
+    try {
+      const res = await fetch(`${API_BASE}/reviews/booking/${bookingId}`, {
+        headers: getAuthHeaders()
+      })
+      if (!res.ok) return null
+      return res.json()
+    } catch {
+      return null
+    }
+  },
+
+  // Virtual Video Call (MVP)
+  async startVirtualCall(bookingId: number): Promise<VirtualCallResponse> {
+    const res = await fetch(`${API_BASE}/bookings/${bookingId}/virtual-call/start`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'Failed to start virtual call')
+    }
+    return res.json()
+  },
+
+  async getVirtualCall(bookingId: number): Promise<VirtualCallResponse> {
+    const res = await fetch(`${API_BASE}/bookings/${bookingId}/virtual-call`, {
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'Failed to retrieve virtual call details')
+    }
+    return res.json()
+  },
+
+  async notifyVirtualCall(bookingId: number, message?: string): Promise<{ status: string; message: string }> {
+    const res = await fetch(`${API_BASE}/bookings/${bookingId}/virtual-call/notify`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ booking_id: bookingId, message })
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'Failed to send virtual call notification')
+    }
+    return res.json()
+  },
+
+  // Family Circle
+  async getFamilyCircle(): Promise<FamilyCircleResponse> {
+    const res = await fetch(`${API_BASE}/family/circle`, {
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'Failed to fetch Family Circle')
+    }
+    return res.json()
+  },
+
+  async inviteFamilyMember(data: {
+    email_or_phone: string
+    relationship_type: string
+    permissions?: Record<string, boolean>
+  }): Promise<FamilyInviteResponse> {
+    const res = await fetch(`${API_BASE}/family/invite`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'Failed to invite family member')
+    }
+    return res.json()
+  },
+
+  async inspectFamilyInvitation(token: string): Promise<FamilyInvitationDetailResponse> {
+    const res = await fetch(`${API_BASE}/family/invitations/${token}`)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'Invitation invalid or expired')
+    }
+    return res.json()
+  },
+
+  async acceptFamilyInvitation(token: string): Promise<{ status: string; message: string; senior_name?: string }> {
+    const res = await fetch(`${API_BASE}/family/invitations/${token}/accept`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'Failed to accept invitation')
+    }
+    return res.json()
+  },
+
+  async rejectFamilyInvitation(token: string): Promise<{ status: string; message: string }> {
+    const res = await fetch(`${API_BASE}/family/invitations/${token}/reject`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) throw new Error('Failed to decline invitation')
+    return res.json()
+  },
+
+  async updateFamilyPermissions(relationshipId: number, permissions: Record<string, boolean>): Promise<FamilyMember> {
+    const res = await fetch(`${API_BASE}/family/members/${relationshipId}/permissions`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ permissions })
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'Failed to update permissions')
+    }
+    return res.json()
+  },
+
+  async removeFamilyMember(relationshipId: number): Promise<{ status: string; message: string }> {
+    const res = await fetch(`${API_BASE}/family/members/${relationshipId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'Failed to remove family member')
+    }
+    return res.json()
+  },
+
+  async getConnectedSeniors(): Promise<ConnectedSenior[]> {
+    const res = await fetch(`${API_BASE}/family/seniors`, {
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) return []
+    return res.json()
+  },
+
+  async getSeniorDashboardForFamily(seniorUserId: number): Promise<SeniorDashboardForFamily> {
+    const res = await fetch(`${API_BASE}/family/senior/${seniorUserId}/dashboard`, {
+      headers: getAuthHeaders()
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || 'Failed to load senior dashboard for family')
     }
     return res.json()
   },

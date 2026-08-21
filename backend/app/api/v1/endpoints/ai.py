@@ -115,7 +115,7 @@ def smart_match_endpoint(payload: SmartMatchRequest, db: Session = Depends(get_d
         years_exp = max([s.years_experience for s in skills], default=15)
 
         reviews = db.query(Review).filter(Review.provider_id == provider.id).all()
-        avg_rating = 5.0
+        avg_rating = 0.0
         if reviews:
             avg_rating = round(sum(r.rating for r in reviews) / len(reviews), 1)
 
